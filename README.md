@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # paru_kuat
 
 A new Flutter project.
@@ -18,4 +17,3 @@ For help getting started with Flutter development, view the
 samples, guidance on mobile development, and a full API reference.
 =======
 # paruKuat
->>>>>>> 1b80750132fb6d2a0b25e4246ba77964a4160242
