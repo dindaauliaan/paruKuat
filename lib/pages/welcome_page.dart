@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'login_page.dart';
 
 class WelcomePageParukuat extends StatefulWidget {
   const WelcomePageParukuat({super.key});
@@ -199,71 +198,6 @@ class _WelcomePageParukuatState extends State<WelcomePageParukuat>
                         ),
                       ),
                       const SizedBox(height: 48),
-                      // Progress bar
-                      AnimatedBuilder(
-                        animation: _progressAnimation,
-                        builder: (context, child) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 64),
-                            child: Column(
-                              children: [
-                                Stack(
-                                  children: [
-                                    Container(
-                                      width: double.infinity,
-                                      height: 6,
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFE0E3E3),
-                                        borderRadius: BorderRadius.circular(9999),
-                                      ),
-                                    ),
-                                    Container(
-                                      width:
-                                          MediaQuery.of(context).size.width -
-                                              128,
-                                      height: 6,
-                                      child: FractionallySizedBox(
-                                        alignment: Alignment.centerLeft,
-                                        widthFactor: _progressAnimation.value,
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            gradient: const LinearGradient(
-                                              colors: [
-                                                Color(0xFFFEA8A7),
-                                                Color(0xFFEB4C4C),
-                                              ],
-                                            ),
-                                            borderRadius:
-                                                BorderRadius.circular(9999),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: const Color(0xFFEB4C4C)
-                                                    .withValues(alpha: 0.3),
-                                                blurRadius: 8,
-                                                offset: const Offset(0, 2),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'Memuat...',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade400,
-                                    fontWeight: FontWeight.w400,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 48),
                       // Tombol Mulai
                       FadeTransition(
                         opacity: _fadeAnimation,
@@ -274,14 +208,9 @@ class _WelcomePageParukuatState extends State<WelcomePageParukuat>
                             height: 52,
                             child: ElevatedButton(
                               onPressed: () {
-                                Navigator.push(
+                                Navigator.pushNamed(
                                   context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const Scaffold(
-                                          body: LoginParukuat(),
-                                        ),
-                                  ),
+                                  '/login',
                                 );
                               },
                               style: ElevatedButton.styleFrom(
