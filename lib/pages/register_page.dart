@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'home_page.dart';
-import 'register_page.dart';
+import 'login_page.dart';
 
-class LoginParukuat extends StatelessWidget {
-  const LoginParukuat({super.key});
+class RegisterParukuat extends StatelessWidget {
+  const RegisterParukuat({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -35,12 +34,12 @@ class LoginParukuat extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  SizedBox(height: availHeight * 0.07),
-                  const _Header(),
-                  SizedBox(height: availHeight * 0.03),
-                  const _LoginCard(),
-                  SizedBox(height: availHeight * 0.04),
-                  const _Footer(),
+                  SizedBox(height: availHeight * 0.06),
+                  const _RegisterHeader(),
+                  SizedBox(height: availHeight * 0.025),
+                  const _RegisterCard(),
+                  SizedBox(height: availHeight * 0.035),
+                  const _RegisterFooter(),
                   SizedBox(height: availHeight * 0.04),
                 ],
               ),
@@ -55,8 +54,8 @@ class LoginParukuat extends StatelessWidget {
 // ==================================================================
 // HEADER
 // ==================================================================
-class _Header extends StatelessWidget {
-  const _Header();
+class _RegisterHeader extends StatelessWidget {
+  const _RegisterHeader();
 
   @override
   Widget build(BuildContext context) {
@@ -95,7 +94,7 @@ class _Header extends StatelessWidget {
         const Padding(
           padding: EdgeInsets.only(bottom: 12),
           child: Text(
-            'Selamat Datang\nKembali',
+            'Selamat Datang!',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Color(0xFFCD2C58),
@@ -110,7 +109,7 @@ class _Header extends StatelessWidget {
         ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 320),
           child: const Text(
-            'Silakan masuk untuk melanjutkan\nperjalanan kesehatan paru Anda.',
+            'Silakan daftar untuk melanjutkan\nperjalanan kesehatan paru Anda.',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Color(0xFF3E4949),
@@ -127,10 +126,10 @@ class _Header extends StatelessWidget {
 }
 
 // ==================================================================
-// LOGIN CARD
+// REGISTER CARD
 // ==================================================================
-class _LoginCard extends StatelessWidget {
-  const _LoginCard();
+class _RegisterCard extends StatelessWidget {
+  const _RegisterCard();
 
   @override
   Widget build(BuildContext context) {
@@ -155,7 +154,7 @@ class _LoginCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          _FormFields(),
+          _RegisterFormFields(),
           SizedBox(height: 40),
           _DividerWithText(),
           SizedBox(height: 40),
@@ -167,10 +166,10 @@ class _LoginCard extends StatelessWidget {
 }
 
 // ==================================================================
-// FORM FIELDS (Email, Password, Lupa Sandi, Tombol Masuk)
+// FORM FIELDS (Fullname, Email, Password, Phone, Birth Date, Daftar)
 // ==================================================================
-class _FormFields extends StatelessWidget {
-  const _FormFields();
+class _RegisterFormFields extends StatelessWidget {
+  const _RegisterFormFields();
 
   @override
   Widget build(BuildContext context) {
@@ -178,13 +177,78 @@ class _FormFields extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        _FullnameField(),
+        SizedBox(height: 24),
         _EmailField(),
         SizedBox(height: 24),
         _PasswordField(),
-        SizedBox(height: 16),
-        _ForgotPasswordLink(),
         SizedBox(height: 24),
-        _LoginButton(),
+        _PhoneField(),
+        SizedBox(height: 24),
+        _BirthDateField(),
+        SizedBox(height: 32),
+        _RegisterButton(),
+      ],
+    );
+  }
+}
+
+// ==================================================================
+// FULLNAME FIELD
+// ==================================================================
+class _FullnameField extends StatelessWidget {
+  const _FullnameField();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            'FULLNAME',
+            style: TextStyle(
+              color: Color(0xFF3E4949),
+              fontSize: 11,
+              fontFamily: 'Manrope',
+              fontWeight: FontWeight.w700,
+              height: 1.50,
+              letterSpacing: 1.10,
+            ),
+          ),
+        ),
+        TextFormField(
+          keyboardType: TextInputType.name,
+          textCapitalization: TextCapitalization.words,
+          decoration: InputDecoration(
+            hintText: 'Nama Lengkap',
+            hintStyle: const TextStyle(
+              color: Color(0xFFBDC9C8),
+              fontSize: 16,
+              fontFamily: 'Manrope',
+              fontWeight: FontWeight.w500,
+            ),
+            prefixIcon: const Padding(
+              padding: EdgeInsets.only(left: 16, right: 12),
+              child: Icon(Icons.person_outline, color: Color(0xFF8E9999), size: 20),
+            ),
+            prefixIconConstraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(9999),
+              borderSide: BorderSide.none,
+            ),
+          ),
+          style: const TextStyle(
+            color: Color(0xFF3E4949),
+            fontSize: 16,
+            fontFamily: 'Manrope',
+            fontWeight: FontWeight.w500,
+          ),
+        ),
       ],
     );
   }
@@ -333,45 +397,180 @@ class _PasswordFieldState extends State<_PasswordField> {
 }
 
 // ==================================================================
-// FORGOT PASSWORD LINK
+// PHONE NUMBER FIELD
 // ==================================================================
-class _ForgotPasswordLink extends StatelessWidget {
-  const _ForgotPasswordLink();
+class _PhoneField extends StatelessWidget {
+  const _PhoneField();
 
   @override
   Widget build(BuildContext context) {
-    return const Align(
-      alignment: Alignment.centerRight,
-      child: Text(
-        'Lupa Kata Sandi?',
-        style: TextStyle(
-          color: Color(0xFF8B4823),
-          fontSize: 14,
-          fontFamily: 'Manrope',
-          fontWeight: FontWeight.w700,
-          height: 1.43,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            'PHONE NUMBER',
+            style: TextStyle(
+              color: Color(0xFF3E4949),
+              fontSize: 11,
+              fontFamily: 'Manrope',
+              fontWeight: FontWeight.w700,
+              height: 1.50,
+              letterSpacing: 1.10,
+            ),
+          ),
         ),
-      ),
+        TextFormField(
+          keyboardType: TextInputType.phone,
+          decoration: InputDecoration(
+            hintText: '08xxxxxxxx',
+            hintStyle: const TextStyle(
+              color: Color(0xFFBDC9C8),
+              fontSize: 16,
+              fontFamily: 'Manrope',
+              fontWeight: FontWeight.w500,
+            ),
+            prefixIcon: const Padding(
+              padding: EdgeInsets.only(left: 16, right: 12),
+              child: Icon(Icons.phone_outlined, color: Color(0xFF8E9999), size: 20),
+            ),
+            prefixIconConstraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(9999),
+              borderSide: BorderSide.none,
+            ),
+          ),
+          style: const TextStyle(
+            color: Color(0xFF3E4949),
+            fontSize: 16,
+            fontFamily: 'Manrope',
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
     );
   }
 }
 
 // ==================================================================
-// LOGIN BUTTON — PINK GRADIENT
+// BIRTH DATE FIELD
 // ==================================================================
-class _LoginButton extends StatelessWidget {
-  const _LoginButton();
+class _BirthDateField extends StatefulWidget {
+  const _BirthDateField();
+
+  @override
+  State<_BirthDateField> createState() => _BirthDateFieldState();
+}
+
+class _BirthDateFieldState extends State<_BirthDateField> {
+  final TextEditingController _dateController = TextEditingController();
+
+  @override
+  void dispose() {
+    _dateController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime(2000),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+      helpText: 'Pilih Tanggal Lahir',
+      cancelText: 'Batal',
+      confirmText: 'Pilih',
+    );
+    if (picked != null) {
+      setState(() {
+        _dateController.text =
+            '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            'BIRTH DATE',
+            style: TextStyle(
+              color: Color(0xFF3E4949),
+              fontSize: 11,
+              fontFamily: 'Manrope',
+              fontWeight: FontWeight.w700,
+              height: 1.50,
+              letterSpacing: 1.10,
+            ),
+          ),
+        ),
+        TextFormField(
+          controller: _dateController,
+          readOnly: true,
+          onTap: _pickDate,
+          decoration: InputDecoration(
+            hintText: 'DD/MM/YYYY',
+            hintStyle: const TextStyle(
+              color: Color(0xFFBDC9C8),
+              fontSize: 16,
+              fontFamily: 'Manrope',
+              fontWeight: FontWeight.w500,
+            ),
+            prefixIcon: const Padding(
+              padding: EdgeInsets.only(left: 16, right: 12),
+              child: Icon(Icons.calendar_today_outlined, color: Color(0xFF8E9999), size: 20),
+            ),
+            prefixIconConstraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+            suffixIcon: Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: IconButton(
+                icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF8E9999), size: 24),
+                onPressed: _pickDate,
+              ),
+            ),
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(9999),
+              borderSide: BorderSide.none,
+            ),
+          ),
+          style: const TextStyle(
+            color: Color(0xFF3E4949),
+            fontSize: 16,
+            fontFamily: 'Manrope',
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ==================================================================
+// REGISTER BUTTON — PINK GRADIENT
+// ==================================================================
+class _RegisterButton extends StatelessWidget {
+  const _RegisterButton();
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const Scaffold(
-              body: HomeParukuat(),
-            ),
+        // TODO: Implement registration logic
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Registrasi berhasil!'),
+            backgroundColor: Color(0xFFCD2C58),
           ),
         );
       },
@@ -392,7 +591,7 @@ class _LoginButton extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              'Masuk',
+              'Daftar',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.white,
@@ -412,7 +611,7 @@ class _LoginButton extends StatelessWidget {
 }
 
 // ==================================================================
-// DIVIDER: "ATAU MASUK DENGAN"
+// DIVIDER: "ATAU DAFTAR DENGAN"
 // ==================================================================
 class _DividerWithText extends StatelessWidget {
   const _DividerWithText();
@@ -426,7 +625,7 @@ class _DividerWithText extends StatelessWidget {
         Padding(
           padding: EdgeInsets.symmetric(horizontal: 16),
           child: Text(
-            'ATAU MASUK DENGAN',
+            'ATAU DAFTAR DENGAN',
             style: TextStyle(
               color: Color(0xFF6E7979),
               fontSize: 11,
@@ -504,8 +703,8 @@ class _GoogleButton extends StatelessWidget {
 // ==================================================================
 // FOOTER
 // ==================================================================
-class _Footer extends StatelessWidget {
-  const _Footer();
+class _RegisterFooter extends StatelessWidget {
+  const _RegisterFooter();
 
   @override
   Widget build(BuildContext context) {
@@ -514,7 +713,7 @@ class _Footer extends StatelessWidget {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => const RegisterParukuat(),
+            builder: (context) => const LoginParukuat(),
           ),
         );
       },
@@ -523,7 +722,7 @@ class _Footer extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            'Belum punya akun? ',
+            'Sudah punya akun? ',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Color(0xFF3E4949),
@@ -534,7 +733,7 @@ class _Footer extends StatelessWidget {
             ),
           ),
           Text(
-            'Daftar',
+            'Masuk',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Color(0xFFCD2C58),
