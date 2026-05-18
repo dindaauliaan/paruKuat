@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'pages/welcome_page.dart';
-import 'pages/login_page.dart';
-import 'pages/register_page.dart';
 import 'pages/home_page.dart';
 import 'pages/games_page.dart';
 import 'pages/breathing_page.dart';
@@ -31,8 +29,6 @@ class ParuKuatApp extends StatelessWidget {
       ),
       home: const WelcomePageParukuat(),
       routes: {
-        '/login': (context) => const LoginParukuat(),
-        '/register': (context) => const RegisterParukuat(),
         '/home': (context) => const HomeParukuat(),
         '/games': (context) => const GamesParukuat(),
         '/breathing': (context) => const BreathingParukuat(),

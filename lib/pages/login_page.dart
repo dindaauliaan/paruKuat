@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'home_page.dart';
-import 'register_page.dart';
 
 class LoginParukuat extends StatelessWidget {
   const LoginParukuat({super.key});
@@ -509,43 +508,33 @@ class _Footer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const RegisterParukuat(),
+    return const Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          'Belum punya akun? ',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Color(0xFF3E4949),
+            fontSize: 16,
+            fontFamily: 'Manrope',
+            fontWeight: FontWeight.w500,
+            height: 1.50,
           ),
-        );
-      },
-      child: const Row(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            'Belum punya akun? ',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Color(0xFF3E4949),
-              fontSize: 16,
-              fontFamily: 'Manrope',
-              fontWeight: FontWeight.w500,
-              height: 1.50,
-            ),
+        ),
+        Text(
+          'Daftar',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Color(0xFFCD2C58),
+            fontSize: 16,
+            fontFamily: 'Manrope',
+            fontWeight: FontWeight.w800,
+            height: 1.50,
           ),
-          Text(
-            'Daftar',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Color(0xFFCD2C58),
-              fontSize: 16,
-              fontFamily: 'Manrope',
-              fontWeight: FontWeight.w800,
-              height: 1.50,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
