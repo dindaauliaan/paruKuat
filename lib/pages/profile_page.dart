@@ -563,6 +563,12 @@ class ProfileParukuat extends StatelessWidget {
                 isActive: true,
               ),
               _buildDivider(),
+              _buildToggleRow(
+                icon: Icons.dark_mode_outlined,
+                title: 'Dark Mode',
+                isActive: false,
+              ),
+              _buildDivider(),
               _buildSettingRow(
                 icon: Icons.language_outlined,
                 title: 'Language',
