@@ -1,47 +1,97 @@
 import 'package:flutter/material.dart';
-import 'home_page.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-class LoginParukuat extends StatelessWidget {
+import '../core/constants/app_colors.dart';
+import '../core/constants/app_text_styles.dart';
+import '../core/router/app_routes.dart';
+import '../features/auth/presentation/auth_notifier.dart';
+import '../features/auth/presentation/auth_widgets.dart';
+
+/// Login screen — terhubung ke AuthNotifier via Riverpod.
+class LoginParukuat extends ConsumerStatefulWidget {
   const LoginParukuat({super.key});
 
   @override
+  ConsumerState<LoginParukuat> createState() => _LoginParukuatState();
+}
+
+class _LoginParukuatState extends ConsumerState<LoginParukuat> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _obscurePassword = true;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    await ref.read(authNotifierProvider.notifier).login(
+          email: _emailController.text,
+          password: _passwordController.text,
+        );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
-    final topPadding = MediaQuery.of(context).padding.top;
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
-    final availHeight = screenHeight - topPadding - bottomPadding;
+    final availHeight = MediaQuery.of(context).size.height -
+        MediaQuery.of(context).padding.top -
+        MediaQuery.of(context).padding.bottom;
+
+    ref.listen<AuthState>(authNotifierProvider, (_, next) {
+      if (next is AuthAuthenticated) {
+        context.go(AppRoutes.home);
+      } else if (next is AuthError) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.message),
+            backgroundColor: AppColors.primaryDark,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+        ref.read(authNotifierProvider.notifier).clearError();
+      }
+    });
+
+    final isLoading = ref.watch(authNotifierProvider) is AuthLoading;
 
     return Scaffold(
       body: Container(
         height: double.infinity,
         width: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFFFC7C7),
-              Color(0xFFFFF2F2),
-              Color(0xFFFFC7C7),
-            ],
-            stops: [0.0, 0.4, 1.0],
-          ),
-        ),
+        decoration: const BoxDecoration(gradient: AppColors.bgGradient),
         child: SafeArea(
           child: SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  SizedBox(height: availHeight * 0.07),
-                  const _Header(),
-                  SizedBox(height: availHeight * 0.03),
-                  const _LoginCard(),
-                  SizedBox(height: availHeight * 0.04),
-                  const _Footer(),
-                  SizedBox(height: availHeight * 0.04),
-                ],
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    SizedBox(height: availHeight * 0.07),
+                    const _LoginHeader(),
+                    SizedBox(height: availHeight * 0.03),
+                    _LoginCard(
+                      emailController: _emailController,
+                      passwordController: _passwordController,
+                      obscurePassword: _obscurePassword,
+                      isLoading: isLoading,
+                      onTogglePassword: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
+                      onSubmit: _submit,
+                    ),
+                    SizedBox(height: availHeight * 0.04),
+                    _LoginFooter(isLoading: isLoading),
+                    SizedBox(height: availHeight * 0.04),
+                  ],
+                ),
               ),
             ),
           ),
@@ -51,11 +101,11 @@ class LoginParukuat extends StatelessWidget {
   }
 }
 
-// ==================================================================
+// ====================================================================
 // HEADER
-// ==================================================================
-class _Header extends StatelessWidget {
-  const _Header();
+// ====================================================================
+class _LoginHeader extends StatelessWidget {
+  const _LoginHeader();
 
   @override
   Widget build(BuildContext context) {
@@ -72,22 +122,14 @@ class _Header extends StatelessWidget {
                 'assets/images/LogoParuKuat.png',
                 width: 30,
                 height: 30,
-                errorBuilder: (context, error, stackTrace) =>
-                    const Icon(Icons.health_and_safety, color: Color(0xFFCD2C58), size: 30),
-              ),
-              const SizedBox(width: 8),
-              const Text(
-                'ParuKuat',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Color(0xFFCD2C58),
-                  fontSize: 30,
-                  fontFamily: 'Manrope',
-                  fontWeight: FontWeight.w800,
-                  height: 1.20,
-                  letterSpacing: -1.50,
+                errorBuilder: (_, _, _) => const Icon(
+                  Icons.health_and_safety,
+                  color: AppColors.primary,
+                  size: 30,
                 ),
               ),
+              const SizedBox(width: 8),
+              const Text('ParuKuat', style: AppTextStyles.brandXLarge),
             ],
           ),
         ),
@@ -97,9 +139,9 @@ class _Header extends StatelessWidget {
             'Selamat Datang\nKembali',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Color(0xFFCD2C58),
-              fontSize: 36,
               fontFamily: 'Manrope',
+              color: AppColors.primary,
+              fontSize: 36,
               fontWeight: FontWeight.w800,
               height: 1.11,
               letterSpacing: -0.90,
@@ -112,9 +154,9 @@ class _Header extends StatelessWidget {
             'Silakan masuk untuk melanjutkan\nperjalanan kesehatan paru Anda.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Color(0xFF3E4949),
-              fontSize: 16,
               fontFamily: 'Manrope',
+              color: AppColors.textSecondary,
+              fontSize: 16,
               fontWeight: FontWeight.w500,
               height: 1.63,
             ),
@@ -125,11 +167,25 @@ class _Header extends StatelessWidget {
   }
 }
 
-// ==================================================================
+// ====================================================================
 // LOGIN CARD
-// ==================================================================
+// ====================================================================
 class _LoginCard extends StatelessWidget {
-  const _LoginCard();
+  final TextEditingController emailController;
+  final TextEditingController passwordController;
+  final bool obscurePassword;
+  final bool isLoading;
+  final VoidCallback onTogglePassword;
+  final VoidCallback onSubmit;
+
+  const _LoginCard({
+    required this.emailController,
+    required this.passwordController,
+    required this.obscurePassword,
+    required this.isLoading,
+    required this.onTogglePassword,
+    required this.onSubmit,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -137,425 +193,121 @@ class _LoginCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(32),
       decoration: ShapeDecoration(
-        color: Colors.white.withValues(alpha: 0.65),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(48),
-        ),
+        color: AppColors.cardSurface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(48)),
         shadows: const [
-          BoxShadow(
-            color: Color(0x1EFF8C8C),
-            blurRadius: 100,
-            offset: Offset(0, 40),
-            spreadRadius: 0,
-          ),
+          BoxShadow(color: AppColors.shadowPink, blurRadius: 100, offset: Offset(0, 40)),
         ],
       ),
-      child: const Column(
+      child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _FormFields(),
-          SizedBox(height: 40),
-          _DividerWithText(),
-          SizedBox(height: 40),
-          _GoogleButton(),
-        ],
-      ),
-    );
-  }
-}
-
-// ==================================================================
-// FORM FIELDS (Email, Password, Lupa Sandi, Tombol Masuk)
-// ==================================================================
-class _FormFields extends StatelessWidget {
-  const _FormFields();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _EmailField(),
-        SizedBox(height: 24),
-        _PasswordField(),
-        SizedBox(height: 16),
-        _ForgotPasswordLink(),
-        SizedBox(height: 24),
-        _LoginButton(),
-      ],
-    );
-  }
-}
-
-// ==================================================================
-// EMAIL FIELD
-// ==================================================================
-class _EmailField extends StatelessWidget {
-  const _EmailField();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(
-            'EMAIL',
-            style: TextStyle(
-              color: Color(0xFF3E4949),
-              fontSize: 11,
-              fontFamily: 'Manrope',
-              fontWeight: FontWeight.w700,
-              height: 1.50,
-              letterSpacing: 1.10,
-            ),
+          const AuthFieldLabel(label: 'EMAIL'),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: emailController,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            style: AppTextStyles.inputText,
+            validator: (v) {
+              if (v == null || v.trim().isEmpty) return 'Email tidak boleh kosong';
+              if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v.trim())) return 'Format email tidak valid';
+              return null;
+            },
+            decoration: authInputDecoration(hint: 'nama@email.com', icon: Icons.mail_outline),
           ),
-        ),
-        TextFormField(
-          keyboardType: TextInputType.emailAddress,
-          decoration: InputDecoration(
-            hintText: 'nama@email.com',
-            hintStyle: const TextStyle(
-              color: Color(0xFFBDC9C8),
-              fontSize: 16,
-              fontFamily: 'Manrope',
-              fontWeight: FontWeight.w500,
-            ),
-            prefixIcon: const Padding(
-              padding: EdgeInsets.only(left: 16, right: 12),
-              child: Icon(Icons.mail_outline, color: Color(0xFF8E9999), size: 20),
-            ),
-            prefixIconConstraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(9999),
-              borderSide: BorderSide.none,
-            ),
-          ),
-          style: const TextStyle(
-            color: Color(0xFF3E4949),
-            fontSize: 16,
-            fontFamily: 'Manrope',
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ==================================================================
-// PASSWORD FIELD
-// ==================================================================
-class _PasswordField extends StatefulWidget {
-  const _PasswordField();
-
-  @override
-  State<_PasswordField> createState() => _PasswordFieldState();
-}
-
-class _PasswordFieldState extends State<_PasswordField> {
-  bool _obscureText = true;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(
-            'KATA SANDI',
-            style: TextStyle(
-              color: Color(0xFF3E4949),
-              fontSize: 11,
-              fontFamily: 'Manrope',
-              fontWeight: FontWeight.w700,
-              height: 1.50,
-              letterSpacing: 1.10,
-            ),
-          ),
-        ),
-        TextFormField(
-          obscureText: _obscureText,
-          decoration: InputDecoration(
-            hintText: '••••••••',
-            hintStyle: const TextStyle(
-              color: Color(0xFFBDC9C8),
-              fontSize: 16,
-              fontFamily: 'Manrope',
-              fontWeight: FontWeight.w500,
-            ),
-            prefixIcon: const Padding(
-              padding: EdgeInsets.only(left: 16, right: 12),
-              child: Icon(Icons.lock_outline, color: Color(0xFF8E9999), size: 20),
-            ),
-            prefixIconConstraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-            suffixIcon: Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: IconButton(
-                icon: Icon(
-                  _obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                  color: const Color(0xFF8E9999),
-                  size: 20,
+          const SizedBox(height: 24),
+          const AuthFieldLabel(label: 'KATA SANDI'),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: passwordController,
+            obscureText: obscurePassword,
+            textInputAction: TextInputAction.done,
+            style: AppTextStyles.inputText,
+            validator: (v) {
+              if (v == null || v.isEmpty) return 'Kata sandi tidak boleh kosong';
+              if (v.length < 6) return 'Kata sandi minimal 6 karakter';
+              return null;
+            },
+            decoration: authInputDecoration(
+              hint: '••••••••',
+              icon: Icons.lock_outline,
+              suffix: Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: IconButton(
+                  icon: Icon(
+                    obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                    color: AppColors.textIcon,
+                    size: 20,
+                  ),
+                  onPressed: onTogglePassword,
                 ),
-                onPressed: () {
-                  setState(() {
-                    _obscureText = !_obscureText;
-                  });
-                },
               ),
             ),
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(9999),
-              borderSide: BorderSide.none,
+          ),
+          const SizedBox(height: 16),
+          const Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              'Lupa Kata Sandi?',
+              style: TextStyle(
+                fontFamily: 'Manrope',
+                color: AppColors.textLink,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                height: 1.43,
+              ),
             ),
           ),
-          style: const TextStyle(
-            color: Color(0xFF3E4949),
-            fontSize: 16,
-            fontFamily: 'Manrope',
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ==================================================================
-// FORGOT PASSWORD LINK
-// ==================================================================
-class _ForgotPasswordLink extends StatelessWidget {
-  const _ForgotPasswordLink();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Align(
-      alignment: Alignment.centerRight,
-      child: Text(
-        'Lupa Kata Sandi?',
-        style: TextStyle(
-          color: Color(0xFF8B4823),
-          fontSize: 14,
-          fontFamily: 'Manrope',
-          fontWeight: FontWeight.w700,
-          height: 1.43,
-        ),
+          const SizedBox(height: 24),
+          AuthPrimaryButton(label: 'Masuk', isLoading: isLoading, onPressed: onSubmit),
+          const SizedBox(height: 40),
+          const AuthDividerWithText(label: 'ATAU MASUK DENGAN'),
+          const SizedBox(height: 40),
+          const AuthSocialButton(),
+        ],
       ),
     );
   }
 }
 
-// ==================================================================
-// LOGIN BUTTON — PINK GRADIENT
-// ==================================================================
-class _LoginButton extends StatelessWidget {
-  const _LoginButton();
+// ====================================================================
+// FOOTER
+// ====================================================================
+class _LoginFooter extends StatelessWidget {
+  final bool isLoading;
+  const _LoginFooter({required this.isLoading});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const Scaffold(
-              body: HomeParukuat(),
-            ),
-          ),
-        );
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: ShapeDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment(0.20, -0.91),
-            end: Alignment(0.80, 1.91),
-            colors: [Color(0xFFD43A64), Color(0xFF9E1B3D)],
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(9999),
-          ),
-        ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Masuk',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontFamily: 'Manrope',
-                fontWeight: FontWeight.w800,
-                height: 1.56,
-              ),
-            ),
-            SizedBox(width: 8),
-            Icon(Icons.arrow_forward, color: Colors.white, size: 20),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ==================================================================
-// DIVIDER: "ATAU MASUK DENGAN"
-// ==================================================================
-class _DividerWithText extends StatelessWidget {
-  const _DividerWithText();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Expanded(child: _DividerLine()),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            'ATAU MASUK DENGAN',
-            style: TextStyle(
-              color: Color(0xFF6E7979),
-              fontSize: 11,
-              fontFamily: 'Manrope',
-              fontWeight: FontWeight.w700,
-              height: 1.50,
-              letterSpacing: 1.10,
-            ),
-          ),
-        ),
-        Expanded(child: _DividerLine()),
-      ],
-    );
-  }
-}
-
-// ==================================================================
-// GOOGLE BUTTON
-// ==================================================================
-class _GoogleButton extends StatelessWidget {
-  const _GoogleButton();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 46,
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      decoration: ShapeDecoration(
-        color: Colors.white,
-        shape: RoundedRectangleBorder(
-          side: const BorderSide(
-            width: 1,
-            color: Color(0x33BDC9C8),
-          ),
-          borderRadius: BorderRadius.circular(9999),
-        ),
-        shadows: const [
-          BoxShadow(
-            color: Color(0x0C000000),
-            blurRadius: 2,
-            offset: Offset(0, 1),
-            spreadRadius: 0,
-          ),
-        ],
-      ),
+      onTap: isLoading ? null : () => context.go(AppRoutes.register),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.network(
-            'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/768px-Google_%22G%22_logo.svg.png',
-            width: 16,
-            height: 16,
-            errorBuilder: (context, error, stackTrace) =>
-                const Icon(Icons.g_mobiledata, size: 24),
-          ),
-          const SizedBox(width: 12),
           const Text(
-            'Google',
-            textAlign: TextAlign.center,
+            'Belum punya akun? ',
             style: TextStyle(
-              color: Color(0xFF181C1D),
-              fontSize: 14,
               fontFamily: 'Manrope',
-              fontWeight: FontWeight.w700,
-              height: 1.43,
+              color: AppColors.textSecondary,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              height: 1.50,
+            ),
+          ),
+          Text(
+            'Daftar',
+            style: TextStyle(
+              fontFamily: 'Manrope',
+              color: isLoading ? AppColors.textHint : AppColors.primary,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              height: 1.50,
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ==================================================================
-// FOOTER
-// ==================================================================
-class _Footer extends StatelessWidget {
-  const _Footer();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Row(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          'Belum punya akun? ',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Color(0xFF3E4949),
-            fontSize: 16,
-            fontFamily: 'Manrope',
-            fontWeight: FontWeight.w500,
-            height: 1.50,
-          ),
-        ),
-        Text(
-          'Daftar',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Color(0xFFCD2C58),
-            fontSize: 16,
-            fontFamily: 'Manrope',
-            fontWeight: FontWeight.w800,
-            height: 1.50,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ==================================================================
-// REUSABLE HELPERS
-// ==================================================================
-class _DividerLine extends StatelessWidget {
-  const _DividerLine();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 1,
-      decoration: const ShapeDecoration(
-        shape: RoundedRectangleBorder(
-          side: BorderSide(
-            width: 1,
-            color: Color(0x4CBDC9C8),
-          ),
-        ),
       ),
     );
   }
