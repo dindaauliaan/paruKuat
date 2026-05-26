@@ -199,10 +199,6 @@ class _HomeContent extends ConsumerWidget {
               value: homeData.latestVitalCapacity,
               delta: homeData.vitalCapacityDelta,
             ),
-            _OxygenQualityCard(
-              value: homeData.latestOxygenLevel,
-              status: homeData.oxygenStatus,
-            ),
             _BreathingTrendCard(trend: homeData.weeklyTrend),
             const SizedBox(height: AppSizes.xxl),
           ],
@@ -448,98 +444,7 @@ class _VitalCapacityCard extends StatelessWidget {
   }
 }
 
-// ====================================================================
-// OXYGEN QUALITY CARD
-// ====================================================================
-class _OxygenQualityCard extends StatelessWidget {
-  final double? value;
-  final String status;
 
-  const _OxygenQualityCard({required this.value, required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: AppSizes.cardOxygenQuality,
-      decoration: ShapeDecoration(
-        color: AppColors.cardSurface,
-        shape: RoundedRectangleBorder(
-          side: BorderSide(
-            width: AppSizes.cardBorderWidth,
-            color: AppColors.cardBorder,
-          ),
-          borderRadius: BorderRadius.circular(AppSizes.radiusCard),
-        ),
-        shadows: const [
-          BoxShadow(
-            color: AppColors.shadowLight,
-            blurRadius: 6,
-            offset: Offset(0, 4),
-            spreadRadius: -4,
-          ),
-          BoxShadow(
-            color: AppColors.shadowLight,
-            blurRadius: 15,
-            offset: Offset(0, 10),
-            spreadRadius: -3,
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          const SizedBox(width: AppSizes.cardPaddingInner),
-          // Icon box
-          Container(
-            width: AppSizes.metricIconBox,
-            height: AppSizes.metricIconBox,
-            decoration: ShapeDecoration(
-              color: AppColors.accentGreen,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppSizes.radiusIconBox),
-              ),
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.favorite_outline_rounded,
-                size: AppSizes.iconLg,
-                color: AppColors.accentTeal,
-              ),
-            ),
-          ),
-          const SizedBox(width: AppSizes.iconToInfo),
-          // Info
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(status, style: AppTextStyles.captionTeal),
-                Text('Kualitas Oksigen', style: AppTextStyles.headingSecondary),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      value != null ? value!.toStringAsFixed(0) : '--',
-                      style: AppTextStyles.metricValue,
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 4, bottom: 4),
-                      child: Text(
-                        '% SpO2',
-                        style: AppTextStyles.captionSemiBold,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 // ====================================================================
 // BREATHING TREND CARD
