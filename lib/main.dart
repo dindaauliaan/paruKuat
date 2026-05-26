@@ -1,40 +1,98 @@
 import 'package:flutter/material.dart';
-import 'pages/welcome_page.dart';
-import 'pages/home_page.dart';
-import 'pages/games_page.dart';
-import 'pages/breathing_page.dart';
-import 'pages/profile_page.dart';
-import 'pages/notification_page.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-void main() {
-  runApp(const ParuKuatApp());
+import 'core/router/app_router.dart';
+import 'features/auth/presentation/auth_notifier.dart';
+
+const String _supabaseUrl = 'https://vtpivcozhlfvixqdjtxf.supabase.co';
+const String _supabaseAnonKey =
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'
+    '.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ0cGl2Y296aGxmdml4cWRqdHhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyOTk2MjksImV4cCI6MjA5Mjg3NTYyOX0'
+    '.XbriEMe-3hXZWPQpincCWrWxqo6zPzWdBgmIb0ORzh8';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Error handler — tampilkan error di layar biar kelihatan
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+  };
+
+  try {
+    // Inisialisasi Supabase
+    await Supabase.initialize(
+      url: _supabaseUrl,
+      anonKey: _supabaseAnonKey,
+    );
+
+    // Inisialisasi SharedPreferences sebelum runApp
+    final prefs = await SharedPreferences.getInstance();
+
+    runApp(
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+        ],
+        child: const ParuKuatApp(),
+      ),
+    );
+  } catch (e) {
+    // Kalau init gagal, tampilkan error screen
+    runApp(
+      MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          backgroundColor: Colors.white,
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: Color(0xFFCD2C58)),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Gagal memulai aplikasi',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, fontFamily: 'Manrope'),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    e.toString(),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 12, fontFamily: 'Manrope', color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
-class ParuKuatApp extends StatelessWidget {
+class ParuKuatApp extends ConsumerWidget {
   const ParuKuatApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(appRouterProvider);
+
+    return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: 'Paru Kuat',
+      routerConfig: router,
       theme: ThemeData(
         useMaterial3: true,
         scaffoldBackgroundColor: Colors.white,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFEB4C4C),
+          seedColor: const Color(0xFFCD2C58),
           brightness: Brightness.light,
         ),
-        fontFamily: 'Roboto',
+        fontFamily: 'Manrope',
       ),
-      home: const WelcomePageParukuat(),
-      routes: {
-        '/home': (context) => const HomeParukuat(),
-        '/games': (context) => const GamesParukuat(),
-        '/breathing': (context) => const BreathingParukuat(),
-        '/profile': (context) => const ProfileParukuat(),
-        '/notifications': (context) => const NotificationParukuat(),
-      },
     );
   }
 }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'login_page.dart';
+import 'package:go_router/go_router.dart';
+import 'package:paru_kuat/core/constants/app_colors.dart';
+import 'package:paru_kuat/core/router/app_routes.dart';
 
 class WelcomePageParukuat extends StatefulWidget {
   const WelcomePageParukuat({super.key});
@@ -85,7 +87,7 @@ class _WelcomePageParukuatState extends State<WelcomePageParukuat>
                           height: 200,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: const Color(0xFFEB4C4C).withValues(alpha: 0.06),
+                            color: AppColors.primary.withValues(alpha: 0.06),
                           ),
                         ),
                       ),
@@ -115,7 +117,7 @@ class _WelcomePageParukuatState extends State<WelcomePageParukuat>
                                 return Icon(
                                   Icons.air_outlined,
                                   size: 120,
-                                  color: const Color(0xFFEB4C4C).withValues(alpha: 0.2),
+                                  color: AppColors.primary.withValues(alpha: 0.2),
                                 );
                               },
                             ),
@@ -168,7 +170,7 @@ class _WelcomePageParukuatState extends State<WelcomePageParukuat>
                                     style: TextStyle(
                                       fontSize: 36,
                                       fontWeight: FontWeight.w300,
-                                      color: const Color(0xFFEB4C4C),
+                                      color: AppColors.primary,
                                       letterSpacing: 2,
                                     ),
                                   ),
@@ -177,7 +179,7 @@ class _WelcomePageParukuatState extends State<WelcomePageParukuat>
                                     style: TextStyle(
                                       fontSize: 36,
                                       fontWeight: FontWeight.w700,
-                                      color: const Color(0xFFEB4C4C),
+                                      color: AppColors.primary,
                                       letterSpacing: 2,
                                     ),
                                   ),
@@ -207,47 +209,48 @@ class _WelcomePageParukuatState extends State<WelcomePageParukuat>
                             padding: const EdgeInsets.symmetric(horizontal: 64),
                             child: Column(
                               children: [
-                                Stack(
-                                  children: [
-                                    Container(
-                                      width: double.infinity,
-                                      height: 6,
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFE0E3E3),
-                                        borderRadius: BorderRadius.circular(9999),
-                                      ),
-                                    ),
-                                    Container(
-                                      width:
-                                          MediaQuery.of(context).size.width -
-                                              128,
-                                      height: 6,
-                                      child: FractionallySizedBox(
-                                        alignment: Alignment.centerLeft,
-                                        widthFactor: _progressAnimation.value,
-                                        child: Container(
+                                LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    return Stack(
+                                      children: [
+                                        Container(
+                                          width: double.infinity,
+                                          height: 6,
                                           decoration: BoxDecoration(
-                                            gradient: const LinearGradient(
-                                              colors: [
-                                                Color(0xFFFEA8A7),
-                                                Color(0xFFEB4C4C),
-                                              ],
-                                            ),
+                                            color: const Color(0xFFE0E3E3),
                                             borderRadius:
                                                 BorderRadius.circular(9999),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: const Color(0xFFEB4C4C)
-                                                    .withValues(alpha: 0.3),
-                                                blurRadius: 8,
-                                                offset: const Offset(0, 2),
-                                              ),
-                                            ],
                                           ),
                                         ),
-                                      ),
-                                    ),
-                                  ],
+                                        FractionallySizedBox(
+                                          alignment: Alignment.centerLeft,
+                                          widthFactor:
+                                              _progressAnimation.value,
+                                          child: Container(
+                                            height: 6,
+                                            decoration: BoxDecoration(
+                                              gradient: const LinearGradient(
+                                                colors: [
+                                                  AppColors.primaryLight,
+                                                  AppColors.primary,
+                                                ],
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(9999),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: AppColors.primary
+                                                      .withValues(alpha: 0.3),
+                                                  blurRadius: 8,
+                                                  offset: const Offset(0, 2),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  },
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
@@ -274,22 +277,13 @@ class _WelcomePageParukuatState extends State<WelcomePageParukuat>
                             height: 52,
                             child: ElevatedButton(
                               onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const Scaffold(
-                                          body: LoginParukuat(),
-                                        ),
-                                  ),
-                                );
+                                context.go(AppRoutes.login);
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor:
-                                    const Color(0xFFEB4C4C),
+                                backgroundColor: AppColors.primary,
                                 foregroundColor: Colors.white,
                                 elevation: 4,
-                                shadowColor: const Color(0xFFEB4C4C)
+                                shadowColor: AppColors.primary
                                     .withValues(alpha: 0.4),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(28),

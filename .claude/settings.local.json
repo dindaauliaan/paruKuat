@@ -1,7 +1,24 @@
 {
   "permissions": {
     "allow": [
-      "PowerShell(Out-Null *)"
+      "PowerShell(Out-Null *)",
+      "Bash(flutter analyze *)",
+      "Bash(grep -r import.*models/__TRACKED_VAR__ lib/ --include=*.dart)",
+      "Bash(grep -r \"import.*services/supabase_api\" lib/ --include=\"*.dart\")",
+      "Bash(find lib/test lib/tests test -name \"*.dart\" -type f)",
+      "Bash(rm lib/services/supabase_api.dart)",
+      "Bash(ls lib/services/)",
+      "Bash(flutter pub *)",
+      "Bash(flutter build *)",
+      "Bash(flutter test *)",
+      "Bash(grep -r \"models/daily_journal\" lib/ --include=\"*.dart\")",
+      "Bash(grep -r \"models/notification\" lib/ --include=\"*.dart\")",
+      "Bash(grep -r \"models/user\" lib/ --include=\"*.dart\")",
+      "Bash(grep -r \"models/exercise_type\" lib/ --include=\"*.dart\")",
+      "Bash(grep -r \"models/exercise_log\" lib/ --include=\"*.dart\")",
+      "Bash(rm lib/models/daily_journal.dart lib/models/exercise_log.dart lib/models/exercise_type.dart lib/models/game_stat.dart lib/models/notification.dart lib/models/user.dart)",
+      "Bash(ls lib/models/)",
+      "Bash(dir \"C:\\\\Users\\\\MSA-DESKTOP\\\\AppData\\\\Local\\\\Pub\\\\Cache\\\\hosted\\\\pub.dev\\\\noise_meter-5.0.2\\\\lib\\\\\" /s /b 2>nul | head -20)"
     ]
   }
 }

@@ -1,47 +1,139 @@
 import 'package:flutter/material.dart';
-import 'login_page.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-class RegisterParukuat extends StatelessWidget {
+import '../core/constants/app_colors.dart';
+import '../core/constants/app_text_styles.dart';
+import '../core/router/app_routes.dart';
+import '../features/auth/presentation/auth_notifier.dart';
+import '../features/auth/presentation/auth_widgets.dart';
+
+/// Register screen — terhubung ke AuthNotifier via Riverpod.
+class RegisterParukuat extends ConsumerStatefulWidget {
   const RegisterParukuat({super.key});
 
   @override
+  ConsumerState<RegisterParukuat> createState() => _RegisterParukuatState();
+}
+
+class _RegisterParukuatState extends ConsumerState<RegisterParukuat> {
+  final _formKey = GlobalKey<FormState>();
+  final _fullNameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _birthDateController = TextEditingController();
+
+  bool _obscurePassword = true;
+  DateTime? _selectedDate;
+
+  @override
+  void dispose() {
+    _fullNameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _phoneController.dispose();
+    _birthDateController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime(2000),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+      helpText: 'Pilih Tanggal Lahir',
+      cancelText: 'Batal',
+      confirmText: 'Pilih',
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: const ColorScheme.light(primary: AppColors.primary),
+        ),
+        child: child!,
+      ),
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedDate = picked;
+        _birthDateController.text =
+            '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
+      });
+    }
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    await ref.read(authNotifierProvider.notifier).register(
+          fullName: _fullNameController.text,
+          email: _emailController.text,
+          password: _passwordController.text,
+          phoneNumber: _phoneController.text.trim().isEmpty
+              ? null
+              : _phoneController.text.trim(),
+          birthDate: _selectedDate,
+        );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
-    final topPadding = MediaQuery.of(context).padding.top;
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
-    final availHeight = screenHeight - topPadding - bottomPadding;
+    final availHeight = MediaQuery.of(context).size.height -
+        MediaQuery.of(context).padding.top -
+        MediaQuery.of(context).padding.bottom;
+
+    ref.listen<AuthState>(authNotifierProvider, (_, next) {
+      if (next is AuthAuthenticated) {
+        context.go(AppRoutes.home);
+      } else if (next is AuthError) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.message),
+            backgroundColor: AppColors.primaryDark,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+        ref.read(authNotifierProvider.notifier).clearError();
+      }
+    });
+
+    final isLoading = ref.watch(authNotifierProvider) is AuthLoading;
 
     return Scaffold(
       body: Container(
         height: double.infinity,
         width: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFFFC7C7),
-              Color(0xFFFFF2F2),
-              Color(0xFFFFC7C7),
-            ],
-            stops: [0.0, 0.4, 1.0],
-          ),
-        ),
+        decoration: const BoxDecoration(gradient: AppColors.bgGradient),
         child: SafeArea(
           child: SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  SizedBox(height: availHeight * 0.06),
-                  const _RegisterHeader(),
-                  SizedBox(height: availHeight * 0.025),
-                  const _RegisterCard(),
-                  SizedBox(height: availHeight * 0.035),
-                  const _RegisterFooter(),
-                  SizedBox(height: availHeight * 0.04),
-                ],
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    SizedBox(height: availHeight * 0.06),
+                    const _RegisterHeader(),
+                    SizedBox(height: availHeight * 0.025),
+                    _RegisterCard(
+                      fullNameController: _fullNameController,
+                      emailController: _emailController,
+                      passwordController: _passwordController,
+                      phoneController: _phoneController,
+                      birthDateController: _birthDateController,
+                      obscurePassword: _obscurePassword,
+                      isLoading: isLoading,
+                      onTogglePassword: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
+                      onPickDate: _pickDate,
+                      onSubmit: _submit,
+                    ),
+                    SizedBox(height: availHeight * 0.035),
+                    _RegisterFooter(isLoading: isLoading),
+                    SizedBox(height: availHeight * 0.04),
+                  ],
+                ),
               ),
             ),
           ),
@@ -51,9 +143,9 @@ class RegisterParukuat extends StatelessWidget {
   }
 }
 
-// ==================================================================
+// ====================================================================
 // HEADER
-// ==================================================================
+// ====================================================================
 class _RegisterHeader extends StatelessWidget {
   const _RegisterHeader();
 
@@ -72,22 +164,14 @@ class _RegisterHeader extends StatelessWidget {
                 'assets/images/LogoParuKuat.png',
                 width: 30,
                 height: 30,
-                errorBuilder: (context, error, stackTrace) =>
-                    const Icon(Icons.health_and_safety, color: Color(0xFFCD2C58), size: 30),
-              ),
-              const SizedBox(width: 8),
-              const Text(
-                'ParuKuat',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Color(0xFFCD2C58),
-                  fontSize: 30,
-                  fontFamily: 'Manrope',
-                  fontWeight: FontWeight.w800,
-                  height: 1.20,
-                  letterSpacing: -1.50,
+                errorBuilder: (_, _, _) => const Icon(
+                  Icons.health_and_safety,
+                  color: AppColors.primary,
+                  size: 30,
                 ),
               ),
+              const SizedBox(width: 8),
+              const Text('ParuKuat', style: AppTextStyles.brandXLarge),
             ],
           ),
         ),
@@ -97,9 +181,9 @@ class _RegisterHeader extends StatelessWidget {
             'Selamat Datang!',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Color(0xFFCD2C58),
-              fontSize: 36,
               fontFamily: 'Manrope',
+              color: AppColors.primary,
+              fontSize: 36,
               fontWeight: FontWeight.w800,
               height: 1.11,
               letterSpacing: -0.90,
@@ -112,9 +196,9 @@ class _RegisterHeader extends StatelessWidget {
             'Silakan daftar untuk melanjutkan\nperjalanan kesehatan paru Anda.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Color(0xFF3E4949),
-              fontSize: 16,
               fontFamily: 'Manrope',
+              color: AppColors.textSecondary,
+              fontSize: 16,
               fontWeight: FontWeight.w500,
               height: 1.63,
             ),
@@ -125,11 +209,33 @@ class _RegisterHeader extends StatelessWidget {
   }
 }
 
-// ==================================================================
+// ====================================================================
 // REGISTER CARD
-// ==================================================================
+// ====================================================================
 class _RegisterCard extends StatelessWidget {
-  const _RegisterCard();
+  final TextEditingController fullNameController;
+  final TextEditingController emailController;
+  final TextEditingController passwordController;
+  final TextEditingController phoneController;
+  final TextEditingController birthDateController;
+  final bool obscurePassword;
+  final bool isLoading;
+  final VoidCallback onTogglePassword;
+  final VoidCallback onPickDate;
+  final VoidCallback onSubmit;
+
+  const _RegisterCard({
+    required this.fullNameController,
+    required this.emailController,
+    required this.passwordController,
+    required this.phoneController,
+    required this.birthDateController,
+    required this.obscurePassword,
+    required this.isLoading,
+    required this.onTogglePassword,
+    required this.onPickDate,
+    required this.onSubmit,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -137,635 +243,158 @@ class _RegisterCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(32),
       decoration: ShapeDecoration(
-        color: Colors.white.withValues(alpha: 0.65),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(48),
-        ),
+        color: AppColors.cardSurface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(48)),
         shadows: const [
-          BoxShadow(
-            color: Color(0x1EFF8C8C),
-            blurRadius: 100,
-            offset: Offset(0, 40),
-            spreadRadius: 0,
-          ),
+          BoxShadow(color: AppColors.shadowPink, blurRadius: 100, offset: Offset(0, 40)),
         ],
       ),
-      child: const Column(
+      child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _RegisterFormFields(),
-          SizedBox(height: 40),
-          _DividerWithText(),
-          SizedBox(height: 40),
-          _GoogleButton(),
+          const AuthFieldLabel(label: 'NAMA LENGKAP'),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: fullNameController,
+            keyboardType: TextInputType.name,
+            textCapitalization: TextCapitalization.words,
+            textInputAction: TextInputAction.next,
+            style: AppTextStyles.inputText,
+            validator: (v) {
+              if (v == null || v.trim().isEmpty) return 'Nama tidak boleh kosong';
+              if (v.trim().length < 2) return 'Nama minimal 2 karakter';
+              return null;
+            },
+            decoration: authInputDecoration(hint: 'Nama Lengkap', icon: Icons.person_outline),
+          ),
+          const SizedBox(height: 24),
+
+          const AuthFieldLabel(label: 'EMAIL'),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: emailController,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            style: AppTextStyles.inputText,
+            validator: (v) {
+              if (v == null || v.trim().isEmpty) return 'Email tidak boleh kosong';
+              if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v.trim())) return 'Format email tidak valid';
+              return null;
+            },
+            decoration: authInputDecoration(hint: 'nama@email.com', icon: Icons.mail_outline),
+          ),
+          const SizedBox(height: 24),
+
+          const AuthFieldLabel(label: 'KATA SANDI'),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: passwordController,
+            obscureText: obscurePassword,
+            textInputAction: TextInputAction.next,
+            style: AppTextStyles.inputText,
+            validator: (v) {
+              if (v == null || v.isEmpty) return 'Kata sandi tidak boleh kosong';
+              if (v.length < 6) return 'Kata sandi minimal 6 karakter';
+              return null;
+            },
+            decoration: authInputDecoration(
+              hint: '••••••••',
+              icon: Icons.lock_outline,
+              suffix: Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: IconButton(
+                  icon: Icon(
+                    obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                    color: AppColors.textIcon,
+                    size: 20,
+                  ),
+                  onPressed: onTogglePassword,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          const AuthFieldLabel(label: 'NO. TELEPON (OPSIONAL)'),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: phoneController,
+            keyboardType: TextInputType.phone,
+            textInputAction: TextInputAction.next,
+            style: AppTextStyles.inputText,
+            decoration: authInputDecoration(hint: '08xxxxxxxx', icon: Icons.phone_outlined),
+          ),
+          const SizedBox(height: 24),
+
+          const AuthFieldLabel(label: 'TANGGAL LAHIR (OPSIONAL)'),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: birthDateController,
+            readOnly: true,
+            onTap: onPickDate,
+            style: AppTextStyles.inputText,
+            decoration: authInputDecoration(
+              hint: 'DD/MM/YYYY',
+              icon: Icons.calendar_today_outlined,
+              suffix: Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_drop_down, color: AppColors.textIcon, size: 24),
+                  onPressed: onPickDate,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 32),
+
+          AuthPrimaryButton(label: 'Daftar', isLoading: isLoading, onPressed: onSubmit),
+          const SizedBox(height: 40),
+          const AuthDividerWithText(label: 'ATAU DAFTAR DENGAN'),
+          const SizedBox(height: 40),
+          const AuthSocialButton(),
         ],
       ),
     );
   }
 }
 
-// ==================================================================
-// FORM FIELDS (Fullname, Email, Password, Phone, Birth Date, Daftar)
-// ==================================================================
-class _RegisterFormFields extends StatelessWidget {
-  const _RegisterFormFields();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _FullnameField(),
-        SizedBox(height: 24),
-        _EmailField(),
-        SizedBox(height: 24),
-        _PasswordField(),
-        SizedBox(height: 24),
-        _PhoneField(),
-        SizedBox(height: 24),
-        _BirthDateField(),
-        SizedBox(height: 32),
-        _RegisterButton(),
-      ],
-    );
-  }
-}
-
-// ==================================================================
-// FULLNAME FIELD
-// ==================================================================
-class _FullnameField extends StatelessWidget {
-  const _FullnameField();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(
-            'FULLNAME',
-            style: TextStyle(
-              color: Color(0xFF3E4949),
-              fontSize: 11,
-              fontFamily: 'Manrope',
-              fontWeight: FontWeight.w700,
-              height: 1.50,
-              letterSpacing: 1.10,
-            ),
-          ),
-        ),
-        TextFormField(
-          keyboardType: TextInputType.name,
-          textCapitalization: TextCapitalization.words,
-          decoration: InputDecoration(
-            hintText: 'Nama Lengkap',
-            hintStyle: const TextStyle(
-              color: Color(0xFFBDC9C8),
-              fontSize: 16,
-              fontFamily: 'Manrope',
-              fontWeight: FontWeight.w500,
-            ),
-            prefixIcon: const Padding(
-              padding: EdgeInsets.only(left: 16, right: 12),
-              child: Icon(Icons.person_outline, color: Color(0xFF8E9999), size: 20),
-            ),
-            prefixIconConstraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(9999),
-              borderSide: BorderSide.none,
-            ),
-          ),
-          style: const TextStyle(
-            color: Color(0xFF3E4949),
-            fontSize: 16,
-            fontFamily: 'Manrope',
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ==================================================================
-// EMAIL FIELD
-// ==================================================================
-class _EmailField extends StatelessWidget {
-  const _EmailField();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(
-            'EMAIL',
-            style: TextStyle(
-              color: Color(0xFF3E4949),
-              fontSize: 11,
-              fontFamily: 'Manrope',
-              fontWeight: FontWeight.w700,
-              height: 1.50,
-              letterSpacing: 1.10,
-            ),
-          ),
-        ),
-        TextFormField(
-          keyboardType: TextInputType.emailAddress,
-          decoration: InputDecoration(
-            hintText: 'nama@email.com',
-            hintStyle: const TextStyle(
-              color: Color(0xFFBDC9C8),
-              fontSize: 16,
-              fontFamily: 'Manrope',
-              fontWeight: FontWeight.w500,
-            ),
-            prefixIcon: const Padding(
-              padding: EdgeInsets.only(left: 16, right: 12),
-              child: Icon(Icons.mail_outline, color: Color(0xFF8E9999), size: 20),
-            ),
-            prefixIconConstraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(9999),
-              borderSide: BorderSide.none,
-            ),
-          ),
-          style: const TextStyle(
-            color: Color(0xFF3E4949),
-            fontSize: 16,
-            fontFamily: 'Manrope',
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ==================================================================
-// PASSWORD FIELD
-// ==================================================================
-class _PasswordField extends StatefulWidget {
-  const _PasswordField();
-
-  @override
-  State<_PasswordField> createState() => _PasswordFieldState();
-}
-
-class _PasswordFieldState extends State<_PasswordField> {
-  bool _obscureText = true;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(
-            'KATA SANDI',
-            style: TextStyle(
-              color: Color(0xFF3E4949),
-              fontSize: 11,
-              fontFamily: 'Manrope',
-              fontWeight: FontWeight.w700,
-              height: 1.50,
-              letterSpacing: 1.10,
-            ),
-          ),
-        ),
-        TextFormField(
-          obscureText: _obscureText,
-          decoration: InputDecoration(
-            hintText: '••••••••',
-            hintStyle: const TextStyle(
-              color: Color(0xFFBDC9C8),
-              fontSize: 16,
-              fontFamily: 'Manrope',
-              fontWeight: FontWeight.w500,
-            ),
-            prefixIcon: const Padding(
-              padding: EdgeInsets.only(left: 16, right: 12),
-              child: Icon(Icons.lock_outline, color: Color(0xFF8E9999), size: 20),
-            ),
-            prefixIconConstraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-            suffixIcon: Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: IconButton(
-                icon: Icon(
-                  _obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                  color: const Color(0xFF8E9999),
-                  size: 20,
-                ),
-                onPressed: () {
-                  setState(() {
-                    _obscureText = !_obscureText;
-                  });
-                },
-              ),
-            ),
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(9999),
-              borderSide: BorderSide.none,
-            ),
-          ),
-          style: const TextStyle(
-            color: Color(0xFF3E4949),
-            fontSize: 16,
-            fontFamily: 'Manrope',
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ==================================================================
-// PHONE NUMBER FIELD
-// ==================================================================
-class _PhoneField extends StatelessWidget {
-  const _PhoneField();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(
-            'PHONE NUMBER',
-            style: TextStyle(
-              color: Color(0xFF3E4949),
-              fontSize: 11,
-              fontFamily: 'Manrope',
-              fontWeight: FontWeight.w700,
-              height: 1.50,
-              letterSpacing: 1.10,
-            ),
-          ),
-        ),
-        TextFormField(
-          keyboardType: TextInputType.phone,
-          decoration: InputDecoration(
-            hintText: '08xxxxxxxx',
-            hintStyle: const TextStyle(
-              color: Color(0xFFBDC9C8),
-              fontSize: 16,
-              fontFamily: 'Manrope',
-              fontWeight: FontWeight.w500,
-            ),
-            prefixIcon: const Padding(
-              padding: EdgeInsets.only(left: 16, right: 12),
-              child: Icon(Icons.phone_outlined, color: Color(0xFF8E9999), size: 20),
-            ),
-            prefixIconConstraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(9999),
-              borderSide: BorderSide.none,
-            ),
-          ),
-          style: const TextStyle(
-            color: Color(0xFF3E4949),
-            fontSize: 16,
-            fontFamily: 'Manrope',
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ==================================================================
-// BIRTH DATE FIELD
-// ==================================================================
-class _BirthDateField extends StatefulWidget {
-  const _BirthDateField();
-
-  @override
-  State<_BirthDateField> createState() => _BirthDateFieldState();
-}
-
-class _BirthDateFieldState extends State<_BirthDateField> {
-  final TextEditingController _dateController = TextEditingController();
-
-  @override
-  void dispose() {
-    _dateController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _pickDate() async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime(2000),
-      firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
-      helpText: 'Pilih Tanggal Lahir',
-      cancelText: 'Batal',
-      confirmText: 'Pilih',
-    );
-    if (picked != null) {
-      setState(() {
-        _dateController.text =
-            '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(
-            'BIRTH DATE',
-            style: TextStyle(
-              color: Color(0xFF3E4949),
-              fontSize: 11,
-              fontFamily: 'Manrope',
-              fontWeight: FontWeight.w700,
-              height: 1.50,
-              letterSpacing: 1.10,
-            ),
-          ),
-        ),
-        TextFormField(
-          controller: _dateController,
-          readOnly: true,
-          onTap: _pickDate,
-          decoration: InputDecoration(
-            hintText: 'DD/MM/YYYY',
-            hintStyle: const TextStyle(
-              color: Color(0xFFBDC9C8),
-              fontSize: 16,
-              fontFamily: 'Manrope',
-              fontWeight: FontWeight.w500,
-            ),
-            prefixIcon: const Padding(
-              padding: EdgeInsets.only(left: 16, right: 12),
-              child: Icon(Icons.calendar_today_outlined, color: Color(0xFF8E9999), size: 20),
-            ),
-            prefixIconConstraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-            suffixIcon: Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: IconButton(
-                icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF8E9999), size: 24),
-                onPressed: _pickDate,
-              ),
-            ),
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(9999),
-              borderSide: BorderSide.none,
-            ),
-          ),
-          style: const TextStyle(
-            color: Color(0xFF3E4949),
-            fontSize: 16,
-            fontFamily: 'Manrope',
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ==================================================================
-// REGISTER BUTTON — PINK GRADIENT
-// ==================================================================
-class _RegisterButton extends StatelessWidget {
-  const _RegisterButton();
+// ====================================================================
+// FOOTER
+// ====================================================================
+class _RegisterFooter extends StatelessWidget {
+  final bool isLoading;
+  const _RegisterFooter({required this.isLoading});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        // TODO: Implement registration logic
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Registrasi berhasil!'),
-            backgroundColor: Color(0xFFCD2C58),
-          ),
-        );
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: ShapeDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment(0.20, -0.91),
-            end: Alignment(0.80, 1.91),
-            colors: [Color(0xFFD43A64), Color(0xFF9E1B3D)],
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(9999),
-          ),
-        ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Daftar',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontFamily: 'Manrope',
-                fontWeight: FontWeight.w800,
-                height: 1.56,
-              ),
-            ),
-            SizedBox(width: 8),
-            Icon(Icons.arrow_forward, color: Colors.white, size: 20),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ==================================================================
-// DIVIDER: "ATAU DAFTAR DENGAN"
-// ==================================================================
-class _DividerWithText extends StatelessWidget {
-  const _DividerWithText();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Expanded(child: _DividerLine()),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            'ATAU DAFTAR DENGAN',
-            style: TextStyle(
-              color: Color(0xFF6E7979),
-              fontSize: 11,
-              fontFamily: 'Manrope',
-              fontWeight: FontWeight.w700,
-              height: 1.50,
-              letterSpacing: 1.10,
-            ),
-          ),
-        ),
-        Expanded(child: _DividerLine()),
-      ],
-    );
-  }
-}
-
-// ==================================================================
-// GOOGLE BUTTON
-// ==================================================================
-class _GoogleButton extends StatelessWidget {
-  const _GoogleButton();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 46,
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      decoration: ShapeDecoration(
-        color: Colors.white,
-        shape: RoundedRectangleBorder(
-          side: const BorderSide(
-            width: 1,
-            color: Color(0x33BDC9C8),
-          ),
-          borderRadius: BorderRadius.circular(9999),
-        ),
-        shadows: const [
-          BoxShadow(
-            color: Color(0x0C000000),
-            blurRadius: 2,
-            offset: Offset(0, 1),
-            spreadRadius: 0,
-          ),
-        ],
-      ),
+      onTap: isLoading ? null : () => context.go(AppRoutes.login),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.network(
-            'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/768px-Google_%22G%22_logo.svg.png',
-            width: 16,
-            height: 16,
-            errorBuilder: (context, error, stackTrace) =>
-                const Icon(Icons.g_mobiledata, size: 24),
-          ),
-          const SizedBox(width: 12),
           const Text(
-            'Google',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Color(0xFF181C1D),
-              fontSize: 14,
-              fontFamily: 'Manrope',
-              fontWeight: FontWeight.w700,
-              height: 1.43,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ==================================================================
-// FOOTER
-// ==================================================================
-class _RegisterFooter extends StatelessWidget {
-  const _RegisterFooter();
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const LoginParukuat(),
-          ),
-        );
-      },
-      child: const Row(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
             'Sudah punya akun? ',
-            textAlign: TextAlign.center,
             style: TextStyle(
-              color: Color(0xFF3E4949),
-              fontSize: 16,
               fontFamily: 'Manrope',
+              color: AppColors.textSecondary,
+              fontSize: 16,
               fontWeight: FontWeight.w500,
               height: 1.50,
             ),
           ),
           Text(
             'Masuk',
-            textAlign: TextAlign.center,
             style: TextStyle(
-              color: Color(0xFFCD2C58),
-              fontSize: 16,
               fontFamily: 'Manrope',
+              color: isLoading ? AppColors.textHint : AppColors.primary,
+              fontSize: 16,
               fontWeight: FontWeight.w800,
               height: 1.50,
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ==================================================================
-// REUSABLE HELPERS
-// ==================================================================
-class _DividerLine extends StatelessWidget {
-  const _DividerLine();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 1,
-      decoration: const ShapeDecoration(
-        shape: RoundedRectangleBorder(
-          side: BorderSide(
-            width: 1,
-            color: Color(0x4CBDC9C8),
-          ),
-        ),
       ),
     );
   }

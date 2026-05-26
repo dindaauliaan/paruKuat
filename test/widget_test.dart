@@ -1,20 +1,84 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:paru_kuat/widgets/bottom_nav.dart';
 
-import 'package:paru_kuat/main.dart';
+/// Test helper: MaterialApp dengan GoRouter minimal untuk test navigasi.
+Widget createTestApp({required String initialRoute, required Widget body}) {
+  final router = GoRouter(
+    initialLocation: initialRoute,
+    routes: [
+      GoRoute(
+        path: '/home',
+        builder: (_, _) => body,
+      ),
+      GoRoute(
+        path: '/games',
+        builder: (_, _) => body,
+      ),
+      GoRoute(
+        path: '/breathing',
+        builder: (_, _) => body,
+      ),
+      GoRoute(
+        path: '/profile',
+        builder: (_, _) => body,
+      ),
+    ],
+  );
+
+  return MaterialApp.router(
+    routerConfig: router,
+  );
+}
 
 void main() {
-  testWidgets('ParuKuat app loads', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const ParuKuatApp());
+  group('BottomNav', () {
+    testWidgets('menampilkan 4 item navigasi', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        createTestApp(
+          initialRoute: '/home',
+          body: const Scaffold(
+            body: Column(
+              children: [
+                Spacer(),
+                BottomNav(currentRoute: '/home'),
+              ],
+            ),
+          ),
+        ),
+      );
 
-    // Verify that app loads
-    expect(find.byType(ParuKuatApp), findsOneWidget);
+      expect(find.text('HOME'), findsOneWidget);
+      expect(find.text('GAMES'), findsOneWidget);
+      expect(find.text('BREATHING'), findsOneWidget);
+      expect(find.text('PROFILE'), findsOneWidget);
+    });
+
+    testWidgets('item yang aktif memiliki style berbeda', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        createTestApp(
+          initialRoute: '/games',
+          body: const Scaffold(
+            body: Column(
+              children: [
+                Spacer(),
+                BottomNav(currentRoute: '/games'),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      // 'GAMES' adalah item aktif → teks putih
+      final gamesText = tester.widget<Text>(find.text('GAMES'));
+      expect(gamesText.style?.color, Colors.white);
+
+      // 'HOME' tidak aktif → teks gelap
+      final homeText = tester.widget<Text>(find.text('HOME'));
+      expect(homeText.style?.color, const Color(0xFF3E4949));
+    });
   });
 }

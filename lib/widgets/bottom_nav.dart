@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class BottomNav extends StatelessWidget {
   final String currentRoute;
@@ -118,11 +119,7 @@ class BottomNav extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         onTap: route != null
             ? () {
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  route,
-                  (route) => route.isFirst,
-                );
+                context.go(route);
               }
             : null,
         child: Container(

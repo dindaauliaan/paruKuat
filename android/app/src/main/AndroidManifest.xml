@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Microphone permission untuk breathing detection -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <application
         android:label="paru_kuat"
         android:name="${applicationName}"
