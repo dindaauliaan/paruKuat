@@ -845,12 +845,12 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${type.durationSeconds ~/ 60} menit · ${pace.label}',
+                        '${type.durationSeconds ~/ 60} menit',
                         style: TextStyle(
                           color: isSelected
                               ? Colors.white70
                               : const Color(0xFF94A3B8),
-                          fontSize: 11,
+                          fontSize: 12,
                           fontFamily: 'Manrope',
                           fontWeight: FontWeight.w500,
                         ),
