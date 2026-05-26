@@ -72,8 +72,10 @@ class _GameScreenState extends ConsumerState<GameScreen>
 
                   // Overlay states (pause, completion)
                   if (gameState.isPaused) _buildPauseOverlay(context),
-                  if (gameState.isCompleted) _buildCompletionOverlay(context, gameState, authState),
-                  if (gameState.isGameOver && !gameState.isCompleted) _buildGameOverOverlay(context, gameState, authState),
+                  if (gameState.isCompleted)
+                    _buildCompletionOverlay(context, gameState, authState),
+                  if (gameState.isGameOver && !gameState.isCompleted)
+                    _buildGameOverOverlay(context, gameState, authState),
                 ],
               ),
             ),
@@ -92,7 +94,12 @@ class _GameScreenState extends ConsumerState<GameScreen>
   // ================================================================
   Widget _buildAppBar(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSizes.appBarHorizontal, 16, AppSizes.appBarHorizontal, 0),
+      padding: const EdgeInsets.fromLTRB(
+        AppSizes.appBarHorizontal,
+        16,
+        AppSizes.appBarHorizontal,
+        0,
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -101,14 +108,11 @@ class _GameScreenState extends ConsumerState<GameScreen>
             child: const Row(
               children: [
                 SizedBox(width: 4),
-                Text('Games', style: AppTextStyles.brandLarge)
+                Text('Games', style: AppTextStyles.brandLarge),
               ],
             ),
           ),
-          const Text(
-            'ParuKuat',
-            style: AppTextStyles.brandLarge,
-          ),
+          const Text('ParuKuat', style: AppTextStyles.brandLarge),
         ],
       ),
     );
@@ -119,7 +123,9 @@ class _GameScreenState extends ConsumerState<GameScreen>
   // ================================================================
   Widget _buildGameArea(BalloonGameState gameState, AuthState authState) {
     // IDLE STATE
-    if (!gameState.isGameActive && !gameState.isGameOver && !gameState.isCompleted) {
+    if (!gameState.isGameActive &&
+        !gameState.isGameOver &&
+        !gameState.isCompleted) {
       return _buildIdleState(context);
     }
 
@@ -162,13 +168,13 @@ class _GameScreenState extends ConsumerState<GameScreen>
                 Text(
                   isMicDenied
                       ? 'Tap & hold untuk mengembangkan balon\n'
-                          'dengan napas Anda.\n\n'
-                          'Jaga balon tetap terbang selama 60 detik\n'
-                          'tanpa membuatnya meledak!'
+                            'dengan napas Anda.\n\n'
+                            'Jaga balon tetap terbang selama 60 detik\n'
+                            'tanpa membuatnya meledak!'
                       : 'Tiup ke mikrofon untuk mengembangkan\n'
-                          'balon dengan napas Anda.\n\n'
-                          'Jaga balon tetap terbang selama 60 detik\n'
-                          'tanpa membuatnya meledak!',
+                            'balon dengan napas Anda.\n\n'
+                            'Jaga balon tetap terbang selama 60 detik\n'
+                            'tanpa membuatnya meledak!',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontFamily: 'Manrope',
@@ -201,9 +207,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: isMicDenied
-            ? const Color(0xFFFFE0E0)
-            : const Color(0xFFE8F5E9),
+        color: isMicDenied ? const Color(0xFFFFE0E0) : const Color(0xFFE8F5E9),
         borderRadius: BorderRadius.circular(9999),
       ),
       child: Row(
@@ -256,7 +260,13 @@ class _GameScreenState extends ConsumerState<GameScreen>
               decoration: BoxDecoration(
                 color: const Color(0xFFB56A41),
                 borderRadius: BorderRadius.circular(14),
-                boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3))],
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 6,
+                    offset: Offset(0, 3),
+                  ),
+                ],
               ),
               child: Center(
                 child: Container(
@@ -311,16 +321,6 @@ class _GameScreenState extends ConsumerState<GameScreen>
                 // Lung expansion progress
                 _buildLungExpansionBar(gameState),
                 const SizedBox(height: 16),
-                // ── Mic Sensitivity & Wave (hanya di mic mode) ──
-                if (gameState.useMicMode) ...[
-                  _buildMicSensitivitySection(gameState),
-                  const SizedBox(height: 16),
-                  _buildBreathWave(gameState),
-                  const SizedBox(height: 16),
-                ],
-                // Timer
-                _buildTimerDisplay(gameState),
-                const SizedBox(height: 16),
                 // Instruction hint
                 _buildBreathingHint(gameState),
                 const SizedBox(height: 16),
@@ -341,18 +341,79 @@ class _GameScreenState extends ConsumerState<GameScreen>
   Widget _buildGameStatCards(BalloonGameState gameState) {
     return Row(
       children: [
-        Expanded(child: _buildSingleStatCard(
-          'CURRENT ALTITUDE',
-          '${gameState.altitude.round()}',
-          'FT',
-        )),
+        Expanded(
+          child: _buildAltitudeWithTimerCard(gameState),
+        ),
         const SizedBox(width: 16),
-        Expanded(child: _buildSingleStatCard(
-          'BREATHING POWER',
-          '${gameState.breathingPower.round()}',
-          '%',
-        )),
+        Expanded(
+          child: _buildSingleStatCard(
+            'BREATHING POWER',
+            '${gameState.breathingPower.round()}',
+            '%',
+          ),
+        ),
       ],
+    );
+  }
+
+  /// Timer card — menggantikan Current Altitude, ukuran sama dengan
+  /// card Breathing Power di sebelahnya.
+  Widget _buildAltitudeWithTimerCard(BalloonGameState gameState) {
+    final isLowTime = gameState.remainingTime <= 10;
+
+    return Container(
+      height: 90,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Label
+          Text(
+            'REMAINING TIME',
+            style: const TextStyle(
+              color: Color(0xFFC46A7A),
+              fontSize: 8,
+              fontFamily: 'Manrope',
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 4),
+          // Timer value (large)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Icon(
+                Icons.timer_outlined,
+                color: isLowTime ? Colors.redAccent : AppColors.primary,
+                size: 22,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                gameState.formattedRemainingTime,
+                style: TextStyle(
+                  fontFamily: 'Manrope',
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  color: isLowTime ? Colors.redAccent : AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -422,7 +483,8 @@ class _GameScreenState extends ConsumerState<GameScreen>
     return AnimatedBuilder(
       animation: _floatController,
       builder: (context, child) {
-        final floatOffset = math.sin(_floatController.value * math.pi * 2) * 4.0;
+        final floatOffset =
+            math.sin(_floatController.value * math.pi * 2) * 4.0;
         return Transform.translate(
           offset: Offset(0, floatOffset),
           child: child,
@@ -441,8 +503,16 @@ class _GameScreenState extends ConsumerState<GameScreen>
               child: Row(
                 spacing: 16 + (gameState.balloonSize * 10),
                 children: [
-                  Container(width: 2, height: 20 + (gameState.balloonSize * 10), color: const Color(0xFFE4A475)),
-                  Container(width: 2, height: 20 + (gameState.balloonSize * 10), color: const Color(0xFFE4A475)),
+                  Container(
+                    width: 2,
+                    height: 20 + (gameState.balloonSize * 10),
+                    color: const Color(0xFFE4A475),
+                  ),
+                  Container(
+                    width: 2,
+                    height: 20 + (gameState.balloonSize * 10),
+                    color: const Color(0xFFE4A475),
+                  ),
                 ],
               ),
             ),
@@ -454,9 +524,15 @@ class _GameScreenState extends ConsumerState<GameScreen>
                 height: 24 + (gameState.balloonSize * 8),
                 decoration: BoxDecoration(
                   color: const Color(0xFFB56A41),
-                  borderRadius: BorderRadius.circular(12 + (gameState.balloonSize * 4)),
+                  borderRadius: BorderRadius.circular(
+                    12 + (gameState.balloonSize * 4),
+                  ),
                   boxShadow: const [
-                    BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3)),
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 6,
+                      offset: Offset(0, 3),
+                    ),
                   ],
                 ),
                 child: Center(
@@ -465,14 +541,19 @@ class _GameScreenState extends ConsumerState<GameScreen>
                     height: 6 + (gameState.balloonSize * 4),
                     decoration: BoxDecoration(
                       color: const Color(0xFF763D1E),
-                      borderRadius: BorderRadius.circular(4 + (gameState.balloonSize * 2)),
+                      borderRadius: BorderRadius.circular(
+                        4 + (gameState.balloonSize * 2),
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
             // Balloon body
-            _buildBalloonBody(size: gameState.balloonSize, isPopped: gameState.isBalloonPopped),
+            _buildBalloonBody(
+              size: gameState.balloonSize,
+              isPopped: gameState.isBalloonPopped,
+            ),
           ],
         ),
       ),
@@ -541,14 +622,24 @@ class _GameScreenState extends ConsumerState<GameScreen>
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Color.lerp(const Color(0xFFFF9A9A), const Color(0xFFFF6B6B), size)!,
-                  Color.lerp(const Color(0xFFE55151), const Color(0xFFCC3333), size)!,
+                  Color.lerp(
+                    const Color(0xFFFF9A9A),
+                    const Color(0xFFFF6B6B),
+                    size,
+                  )!,
+                  Color.lerp(
+                    const Color(0xFFE55151),
+                    const Color(0xFFCC3333),
+                    size,
+                  )!,
                 ],
               ),
         borderRadius: BorderRadius.circular(balloonWidth / 2),
         boxShadow: [
           BoxShadow(
-            color: const Color(0x33C0004D).withValues(alpha: 0.2 + (size * 0.3)),
+            color: const Color(
+              0x33C0004D,
+            ).withValues(alpha: 0.2 + (size * 0.3)),
             blurRadius: 15 + (size * 10),
             offset: const Offset(0, 10),
           ),
@@ -650,8 +741,16 @@ class _GameScreenState extends ConsumerState<GameScreen>
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    Color.lerp(const Color(0xFFFF8080), const Color(0xFFCC3333), progress)!,
-                    Color.lerp(const Color(0xFFE55151), const Color(0xFFAA2222), progress)!,
+                    Color.lerp(
+                      const Color(0xFFFF8080),
+                      const Color(0xFFCC3333),
+                      progress,
+                    )!,
+                    Color.lerp(
+                      const Color(0xFFE55151),
+                      const Color(0xFFAA2222),
+                      progress,
+                    )!,
                   ],
                 ),
                 borderRadius: BorderRadius.circular(9999),
@@ -687,7 +786,9 @@ class _GameScreenState extends ConsumerState<GameScreen>
             children: [
               Icon(
                 Icons.mic,
-                color: gameState.isListeningMic ? AppColors.accentTeal : Colors.grey,
+                color: gameState.isListeningMic
+                    ? AppColors.accentTeal
+                    : Colors.grey,
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -859,16 +960,16 @@ class _GameScreenState extends ConsumerState<GameScreen>
     } else if (isHigh) {
       hint = '⚠️ Almost full! Release to cool down.';
       hintColor = Colors.orangeAccent;
+    } else if (isLow && isMicMode) {
+      hint = 'Tiup lebih kuat ke mikrofon!';
+      hintColor = const Color.fromARGB(255, 255, 255, 255);
+    } else if (isLow) {
+      hint = 'Tap & hold to inflate the balloon!';
+      hintColor = const Color.fromARGB(255, 255, 255, 255);
     } else if (isMicMode && gameState.breathLabel.isNotEmpty) {
       // Gunakan label dari breath detector di mic mode
       hint = gameState.breathLabel;
       hintColor = Color(_breathDetectorColor(gameState.breathingPower));
-    } else if (isLow && isMicMode) {
-      hint = 'Tiup lebih kuat ke mikrofon!';
-      hintColor = AppColors.primary;
-    } else if (isLow) {
-      hint = 'Tap & hold to inflate the balloon!';
-      hintColor = AppColors.primary;
     } else {
       hint = 'Keep going! You\'re doing great! 🌟';
       hintColor = AppColors.accentTeal;
@@ -1000,13 +1101,21 @@ class _GameScreenState extends ConsumerState<GameScreen>
             color: Colors.white,
             borderRadius: BorderRadius.circular(40),
             boxShadow: const [
-              BoxShadow(color: Colors.black12, blurRadius: 30, offset: Offset(0, 15)),
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 30,
+                offset: Offset(0, 15),
+              ),
             ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.pause_circle_outline, color: AppColors.primary, size: 56),
+              const Icon(
+                Icons.pause_circle_outline,
+                color: AppColors.primary,
+                size: 56,
+              ),
               const SizedBox(height: 16),
               const Text(
                 'Game Paused',
@@ -1053,7 +1162,9 @@ class _GameScreenState extends ConsumerState<GameScreen>
                   decoration: BoxDecoration(
                     color: Colors.transparent,
                     borderRadius: BorderRadius.circular(9999),
-                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: const Center(
                     child: Text(
@@ -1078,10 +1189,18 @@ class _GameScreenState extends ConsumerState<GameScreen>
   // ================================================================
   // COMPLETION OVERLAY — Success (survived 60s)
   // ================================================================
-  Widget _buildCompletionOverlay(BuildContext context, BalloonGameState gameState, AuthState authState) {
+  Widget _buildCompletionOverlay(
+    BuildContext context,
+    BalloonGameState gameState,
+    AuthState authState,
+  ) {
     // Trigger save once
     if (!gameState.isGameSaved && authState is AuthAuthenticated) {
-      Future.microtask(() => ref.read(gameNotifierProvider.notifier).saveGameStat(authState.user.id));
+      Future.microtask(
+        () => ref
+            .read(gameNotifierProvider.notifier)
+            .saveGameStat(authState.user.id),
+      );
     }
 
     return Container(
@@ -1095,7 +1214,11 @@ class _GameScreenState extends ConsumerState<GameScreen>
               color: Colors.white,
               borderRadius: BorderRadius.circular(48),
               boxShadow: const [
-                BoxShadow(color: Colors.black12, blurRadius: 30, offset: Offset(0, 15)),
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 30,
+                  offset: Offset(0, 15),
+                ),
               ],
             ),
             child: Column(
@@ -1109,7 +1232,11 @@ class _GameScreenState extends ConsumerState<GameScreen>
                     color: const Color(0xFF91FFD1).withValues(alpha: 0.3),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.check_circle_outline, color: AppColors.accentTeal, size: 48),
+                  child: const Icon(
+                    Icons.check_circle_outline,
+                    color: AppColors.accentTeal,
+                    size: 48,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 const Text(
@@ -1190,7 +1317,9 @@ class _GameScreenState extends ConsumerState<GameScreen>
                     decoration: BoxDecoration(
                       color: Colors.transparent,
                       borderRadius: BorderRadius.circular(9999),
-                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: const Center(
                       child: Text(
@@ -1216,10 +1345,18 @@ class _GameScreenState extends ConsumerState<GameScreen>
   // ================================================================
   // GAME OVER OVERLAY — Balloon popped or fell
   // ================================================================
-  Widget _buildGameOverOverlay(BuildContext context, BalloonGameState gameState, AuthState authState) {
+  Widget _buildGameOverOverlay(
+    BuildContext context,
+    BalloonGameState gameState,
+    AuthState authState,
+  ) {
     // Trigger save once
     if (!gameState.isGameSaved && authState is AuthAuthenticated) {
-      Future.microtask(() => ref.read(gameNotifierProvider.notifier).saveGameStat(authState.user.id));
+      Future.microtask(
+        () => ref
+            .read(gameNotifierProvider.notifier)
+            .saveGameStat(authState.user.id),
+      );
     }
 
     final message = gameState.isBalloonPopped
@@ -1237,7 +1374,11 @@ class _GameScreenState extends ConsumerState<GameScreen>
               color: Colors.white,
               borderRadius: BorderRadius.circular(48),
               boxShadow: const [
-                BoxShadow(color: Colors.black12, blurRadius: 30, offset: Offset(0, 15)),
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 30,
+                  offset: Offset(0, 15),
+                ),
               ],
             ),
             child: Column(
@@ -1252,7 +1393,9 @@ class _GameScreenState extends ConsumerState<GameScreen>
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    gameState.isBalloonPopped ? Icons.broken_image_outlined : Icons.airline_seat_flat,
+                    gameState.isBalloonPopped
+                        ? Icons.broken_image_outlined
+                        : Icons.airline_seat_flat,
                     color: AppColors.primary,
                     size: 48,
                   ),
@@ -1336,7 +1479,9 @@ class _GameScreenState extends ConsumerState<GameScreen>
                     decoration: BoxDecoration(
                       color: Colors.transparent,
                       borderRadius: BorderRadius.circular(9999),
-                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: const Center(
                       child: Text(
@@ -1435,15 +1580,13 @@ class _BreathWavePainter extends CustomPainter {
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [
-          color.withValues(alpha: 0.3),
-          color.withValues(alpha: 0.0),
-        ],
+        colors: [color.withValues(alpha: 0.3), color.withValues(alpha: 0.0)],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
 
     final path = Path();
     final fillPath = Path();
-    final stepX = size.width / (powerHistory.length - 1).clamp(1, powerHistory.length);
+    final stepX =
+        size.width / (powerHistory.length - 1).clamp(1, powerHistory.length);
 
     for (int i = 0; i < powerHistory.length; i++) {
       final x = i * stepX;
@@ -1457,8 +1600,7 @@ class _BreathWavePainter extends CustomPainter {
       } else {
         // Smooth curve using quadratic bezier
         final prevX = (i - 1) * stepX;
-        final prevY =
-            size.height - (powerHistory[i - 1] / 100 * size.height);
+        final prevY = size.height - (powerHistory[i - 1] / 100 * size.height);
         final midX = (prevX + x) / 2;
         path.quadraticBezierTo(prevX, prevY, midX, (prevY + y) / 2);
         fillPath.quadraticBezierTo(prevX, prevY, midX, (prevY + y) / 2);
@@ -1471,10 +1613,7 @@ class _BreathWavePainter extends CustomPainter {
     // Draw fill (area below the line)
     if (powerHistory.length > 1) {
       final lastIdx = powerHistory.length - 1;
-      fillPath.lineTo(
-        lastIdx * stepX,
-        size.height,
-      );
+      fillPath.lineTo(lastIdx * stepX, size.height);
       fillPath.close();
       canvas.drawPath(fillPath, fillPaint);
     }
@@ -1487,8 +1626,7 @@ class _BreathWavePainter extends CustomPainter {
       canvas.drawCircle(
         Offset(
           (powerHistory.length - 1) * stepX,
-          size.height -
-              (powerHistory.last / 100 * size.height),
+          size.height - (powerHistory.last / 100 * size.height),
         ),
         4,
         dotPaint,

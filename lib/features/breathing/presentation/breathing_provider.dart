@@ -30,6 +30,46 @@ final breathingNotifierProvider =
 });
 
 // ====================================================================
+// PACE CONFIGURATIONS
+// ====================================================================
+
+/// Mapping exercise type ID → BreathingPace.
+///
+/// Setiap jenis latihan memiliki pace yang berbeda sesuai tujuan terapeutiknya.
+BreathingPace paceForExerciseType(int exerciseTypeId) {
+  switch (exerciseTypeId) {
+    case 1: // Deep Lung Recovery — slow & deep
+      return const BreathingPace(
+        inhaleSeconds: 4,
+        holdSeconds: 2,
+        exhaleSeconds: 6,
+        restSeconds: 2,
+      );
+    case 2: // Pursed Lip Breathing — shorter inhale, focused exhale
+      return const BreathingPace(
+        inhaleSeconds: 2,
+        holdSeconds: 1,
+        exhaleSeconds: 4,
+        restSeconds: 2,
+      );
+    case 3: // Diaphragmatic Breathing — long & full
+      return const BreathingPace(
+        inhaleSeconds: 5,
+        holdSeconds: 3,
+        exhaleSeconds: 7,
+        restSeconds: 3,
+      );
+    default:
+      return const BreathingPace(
+        inhaleSeconds: 4,
+        holdSeconds: 2,
+        exhaleSeconds: 6,
+        restSeconds: 2,
+      );
+  }
+}
+
+// ====================================================================
 // BREATHING NOTIFIER
 // ====================================================================
 
@@ -54,18 +94,23 @@ class BreathingNotifier extends StateNotifier<BreathingState> {
 
   void startSession() {
     _timer?.cancel();
+    final pace = paceForExerciseType(state.selectedExerciseTypeId);
     final initialPhase = BreathingPhase.inhale;
+    // Hitung total cycles dari total durasi exercise type dibagi cycle duration
+    final totalCycles = _resolveTotalCycles(pace);
+
     state = BreathingState(
       phase: initialPhase,
-      secondsRemaining: initialPhase.durationSeconds,
+      secondsRemaining: pace.inhaleSeconds,
       currentCycle: 1,
-      totalCycles: state.totalCycles,
+      totalCycles: totalCycles,
       isRunning: true,
       isCompleted: false,
       selectedExerciseTypeId: state.selectedExerciseTypeId,
+      pace: pace,
       totalSecondsElapsed: 0,
       circleScale: 0.7,
-      currentColor: _colorForPhase(initialPhase, 0.0),
+      currentColor: _colorForPhase(initialPhase, 0.0, pace),
     );
     _startTimer();
   }
@@ -85,6 +130,19 @@ class BreathingNotifier extends StateNotifier<BreathingState> {
     state = const BreathingState();
   }
 
+  /// Hitung total cycles dari total durasi exercise type / cycleDuration.
+  /// Fallback jika tidak dikenal: 8 cycles.
+  int _resolveTotalCycles(BreathingPace pace) {
+    final durationMap = {
+      1: 112, // Deep Lung Recovery
+      2: 112, // Pursed Lip Breathing
+      3: 168, // Diaphragmatic Breathing
+    };
+    final totalDuration = durationMap[state.selectedExerciseTypeId] ?? 112;
+    final cycles = totalDuration ~/ pace.cycleDuration;
+    return cycles > 0 ? cycles : 8;
+  }
+
   // ── Timer ─────────────────────────────────────────────────────────
 
   void _startTimer() {
@@ -102,13 +160,14 @@ class BreathingNotifier extends StateNotifier<BreathingState> {
 
     if (newRemaining > 0) {
       // Masih dalam fase yang sama
-      final progress =
-          (state.cycleDuration - newRemaining) / state.cycleDuration;
+      final phaseDuration = state.pace.secondsFor(state.phase);
+      final phaseProgress =
+          (phaseDuration - newRemaining) / phaseDuration;
       state = state.copyWith(
         secondsRemaining: newRemaining,
         totalSecondsElapsed: newElapsed,
-        circleScale: _scaleForPhase(state.phase, progress),
-        currentColor: _colorForPhase(state.phase, progress),
+        circleScale: _scaleForPhase(state.phase, phaseProgress),
+        currentColor: _colorForPhase(state.phase, phaseProgress, state.pace),
       );
     } else {
       // Fase selesai — pindah ke fase berikutnya
@@ -140,21 +199,21 @@ class BreathingNotifier extends StateNotifier<BreathingState> {
       final newPhase = BreathingPhase.inhale;
       state = state.copyWith(
         phase: newPhase,
-        secondsRemaining: newPhase.durationSeconds,
+        secondsRemaining: state.pace.inhaleSeconds,
         currentCycle: nextCycle,
         totalSecondsElapsed: newElapsed,
         circleScale: 0.7,
-        currentColor: _colorForPhase(newPhase, 0.0),
+        currentColor: _colorForPhase(newPhase, 0.0, state.pace),
       );
     } else {
       // Pindah ke fase berikutnya dalam cycle yang sama
       final newPhase = phases[currentIndex + 1];
       state = state.copyWith(
         phase: newPhase,
-        secondsRemaining: newPhase.durationSeconds,
+        secondsRemaining: state.pace.secondsFor(newPhase),
         totalSecondsElapsed: newElapsed,
         circleScale: _scaleForPhase(newPhase, 0.0),
-        currentColor: _colorForPhase(newPhase, 0.0),
+        currentColor: _colorForPhase(newPhase, 0.0, state.pace),
       );
     }
   }
@@ -177,7 +236,7 @@ class BreathingNotifier extends StateNotifier<BreathingState> {
   }
 
   /// Warna berdasarkan fase & progress.
-  Color _colorForPhase(BreathingPhase phase, double progress) {
+  Color _colorForPhase(BreathingPhase phase, double progress, BreathingPace pace) {
     switch (phase) {
       case BreathingPhase.inhale:
         return Color.lerp(

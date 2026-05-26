@@ -105,6 +105,12 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
 
                             const SizedBox(height: AppSizes.lg),
 
+                            // Pace badge (hanya saat running)
+                            if (state.isRunning) _buildPaceBadge(state),
+
+                            if (state.isRunning)
+                              const SizedBox(height: AppSizes.lg),
+
                             // Phase indicator
                             if (state.isRunning) _buildPhaseIndicator(state),
 
@@ -584,6 +590,73 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
   }
 
   // ================================================================
+  // PACE BADGE — tampilkan pola napas saat sesi berjalan
+  // ================================================================
+  Widget _buildPaceBadge(BreathingState state) {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: ShapeDecoration(
+          color: Colors.white.withValues(alpha: 0.5),
+          shape: RoundedRectangleBorder(
+            side: BorderSide(
+              width: 1,
+              color: Colors.white.withValues(alpha: 0.3),
+            ),
+            borderRadius: BorderRadius.circular(9999),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.speed, size: 14, color: Color(0xFF64748B)),
+            const SizedBox(width: 6),
+            Text(
+              'Pace',
+              style: TextStyle(
+                fontFamily: 'Manrope',
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF64748B).withValues(alpha: 0.8),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: ShapeDecoration(
+                color: state.currentColor.withValues(alpha: 0.15),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(9999),
+                ),
+              ),
+              child: Text(
+                state.pace.label,
+                style: TextStyle(
+                  fontFamily: 'Manrope',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: state.currentColor,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '${state.pace.cycleDuration}s/cycle',
+              style: TextStyle(
+                fontFamily: 'Manrope',
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF94A3B8),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ================================================================
   // PHASE INDICATOR
   // ================================================================
   Widget _buildPhaseIndicator(BreathingState state) {
@@ -712,7 +785,7 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
           ),
         ),
         SizedBox(
-          height: 80,
+          height: 100,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -721,6 +794,7 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
             itemBuilder: (context, index) {
               final type = types[index];
               final isSelected = state.selectedExerciseTypeId == type.id;
+              final pace = paceForExerciseType(type.id);
               return GestureDetector(
                 onTap: () {
                   ref
@@ -771,14 +845,26 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${type.durationSeconds ~/ 60} menit',
+                        '${type.durationSeconds ~/ 60} menit · ${pace.label}',
                         style: TextStyle(
                           color: isSelected
                               ? Colors.white70
                               : const Color(0xFF94A3B8),
-                          fontSize: 12,
+                          fontSize: 11,
                           fontFamily: 'Manrope',
                           fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        pace.description,
+                        style: TextStyle(
+                          color: isSelected
+                              ? Colors.white54
+                              : const Color(0xFF94A3B8).withValues(alpha: 0.7),
+                          fontSize: 9,
+                          fontFamily: 'Manrope',
+                          fontWeight: FontWeight.w400,
                         ),
                       ),
                     ],

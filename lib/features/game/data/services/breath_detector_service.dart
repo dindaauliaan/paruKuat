@@ -69,12 +69,12 @@ class BreathDetectorService {
   int get totalExhaleCount => _totalExhaleCount;
 
   /// Batas decibel di bawah ini dianggap noise ambient (bukan napas).
-  /// Default: 45 dB — sesuaikan jika perlu.
-  double _dbThreshold = 45.0;
+  /// Default: 87 dB — sesuaikan jika perlu.
+  double _dbThreshold = 87.0;
 
   /// Decibel maksimum untuk mapping 100% power.
-  /// Default: 80 dB.
-  double _dbMax = 80.0;
+  /// Default: 95 dB.
+  double _dbMax = 95.0;
 
   /// Riwayat breathing power untuk visualisasi wave (max 30 entries).
   final List<double> _powerHistory = [];
@@ -225,8 +225,10 @@ class BreathDetectorService {
   /// - Di atas [_dbMax] → 100%
   double _mapDbToPower(double db) {
     if (db < _dbThreshold) return 0;
-    final normalized = ((db - _dbThreshold) / (_dbMax - _dbThreshold))
-        .clamp(0.0, 1.0);
+    final normalized = ((db - _dbThreshold) / (_dbMax - _dbThreshold)).clamp(
+      0.0,
+      1.0,
+    );
     return normalized * 100;
   }
 

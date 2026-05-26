@@ -35,7 +35,7 @@ enum BreathingPhase {
     }
   }
 
-  /// Durasi fase dalam detik.
+  /// Durasi fase default (dipakai sebelum pace dari exercise type diterapkan).
   int get durationSeconds {
     switch (this) {
       case BreathingPhase.inhale:
