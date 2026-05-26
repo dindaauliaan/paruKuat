@@ -1248,12 +1248,6 @@ class _GameScreenState extends ConsumerState<GameScreen>
                 const SizedBox(height: 24),
                 // Stats
                 _buildResultStatRow(
-                  Icons.height,
-                  'Altitude',
-                  '${gameState.altitude.round()} FT',
-                ),
-                const SizedBox(height: 12),
-                _buildResultStatRow(
                   Icons.timer_outlined,
                   'Durasi',
                   gameState.formattedTimeElapsed,
