@@ -93,7 +93,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   final profileUrl = authState is AuthAuthenticated
                       ? authState.user.profilePicture
                       : null;
-                  return _AvatarWidget(profilePictureUrl: profileUrl);
+                  return GestureDetector(
+                    onTap: () => context.go(AppRoutes.profile),
+                    child: _AvatarWidget(profilePictureUrl: profileUrl),
+                  );
                 },
               ),
               // Notification bell with badge

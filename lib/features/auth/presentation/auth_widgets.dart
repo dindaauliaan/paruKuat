@@ -104,50 +104,6 @@ class AuthDividerWithText extends StatelessWidget {
 }
 
 // ====================================================================
-// SOCIAL BUTTON — Google (non-functional MVP)
-// ====================================================================
-class AuthSocialButton extends StatelessWidget {
-  const AuthSocialButton({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 46,
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      decoration: ShapeDecoration(
-        color: Colors.white,
-        shape: RoundedRectangleBorder(
-          side: const BorderSide(color: AppColors.inputBorder),
-          borderRadius: BorderRadius.circular(9999),
-        ),
-        shadows: const [
-          BoxShadow(
-            color: Color(0x0C000000),
-            blurRadius: 2,
-            offset: Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Image.network(
-            'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/768px-Google_%22G%22_logo.svg.png',
-            width: 16,
-            height: 16,
-            errorBuilder: (_, _, _) =>
-                const Icon(Icons.g_mobiledata, size: 24),
-          ),
-          const SizedBox(width: 12),
-          const Text('Google', style: AppTextStyles.captionBold),
-        ],
-      ),
-    );
-  }
-}
-
-// ====================================================================
 // PRIMARY AUTH BUTTON — gradient, loading state
 // ====================================================================
 class AuthPrimaryButton extends StatelessWidget {

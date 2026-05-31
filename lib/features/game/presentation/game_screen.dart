@@ -1335,16 +1335,18 @@ class _GameScreenState extends ConsumerState<GameScreen>
         children: [
           Icon(icon, color: AppColors.primary, size: 22),
           const SizedBox(width: 12),
-          Text(
-            label,
-            style: const TextStyle(
-              fontFamily: 'Manrope',
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textSecondary,
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontFamily: 'Manrope',
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textSecondary,
+              ),
             ),
           ),
-          const Spacer(),
+          const SizedBox(width: 12),
           Text(
             value,
             style: const TextStyle(

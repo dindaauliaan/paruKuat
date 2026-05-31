@@ -114,22 +114,20 @@ class _LoginHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Padding(
-          padding: const EdgeInsets.only(bottom: 24),
-          child: Row(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Image.asset(
                 'assets/images/LogoParuKuat.png',
-                width: 30,
-                height: 30,
+                width: 250,
+                height: 250,
                 errorBuilder: (_, _, _) => const Icon(
                   Icons.health_and_safety,
                   color: AppColors.primary,
                   size: 30,
                 ),
               ),
-              const SizedBox(width: 8),
-              const Text('ParuKuat', style: AppTextStyles.brandXLarge),
             ],
           ),
         ),
@@ -262,11 +260,7 @@ class _LoginCard extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           AuthPrimaryButton(label: 'Masuk', isLoading: isLoading, onPressed: onSubmit),
-          const SizedBox(height: 40),
-          const AuthDividerWithText(label: 'ATAU MASUK DENGAN'),
-          const SizedBox(height: 40),
-          const AuthSocialButton(),
-        ],
+        ]
       ),
     );
   }

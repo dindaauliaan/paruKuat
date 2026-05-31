@@ -9,6 +9,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/router/app_routes.dart';
+import '../../../core/services/local_notification_service.dart';
 import '../../../widgets/bottom_nav.dart';
 import '../../auth/presentation/auth_notifier.dart';
 import '../../progress/presentation/progress_provider.dart';
@@ -26,6 +27,91 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _isLoggingOut = false;
   bool _isUpdatingPhoto = false;
   final _picker = ImagePicker();
+
+  bool _notificationsEnabled = false;
+  int _reminderHour = 8;
+  int _reminderMinute = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final prefs = ref.read(sharedPreferencesProvider);
+      setState(() {
+        _notificationsEnabled = prefs.getBool('daily_reminder_enabled') ?? false;
+        _reminderHour = prefs.getInt('daily_reminder_hour') ?? 8;
+        _reminderMinute = prefs.getInt('daily_reminder_minute') ?? 0;
+      });
+    });
+  }
+
+  Future<void> _updateNotificationSettings({
+    bool? enabled,
+    int? hour,
+    int? minute,
+  }) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    final notificationService = LocalNotificationService();
+
+    if (enabled != null) {
+      _notificationsEnabled = enabled;
+      await prefs.setBool('daily_reminder_enabled', enabled);
+    }
+    if (hour != null) {
+      _reminderHour = hour;
+      await prefs.setInt('daily_reminder_hour', hour);
+    }
+    if (minute != null) {
+      _reminderMinute = minute;
+      await prefs.setInt('daily_reminder_minute', minute);
+    }
+
+    setState(() {});
+
+    if (_notificationsEnabled) {
+      final granted = await notificationService.requestPermissions();
+      if (granted) {
+        await notificationService.scheduleDailyReminder(_reminderHour, _reminderMinute);
+      } else {
+        setState(() {
+          _notificationsEnabled = false;
+        });
+        await prefs.setBool('daily_reminder_enabled', false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Izin notifikasi ditolak. Pengingat tidak dapat dijadwalkan.'),
+              backgroundColor: Color(0xFFC0004D),
+            ),
+          );
+        }
+      }
+    } else {
+      await notificationService.cancelDailyReminder();
+    }
+  }
+
+  Future<void> _selectReminderTime() async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: _reminderHour, minute: _reminderMinute),
+      builder: (ctx, child) => Theme(
+        data: Theme.of(ctx).copyWith(
+          colorScheme: const ColorScheme.light(
+            primary: Color(0xFFC0004D),
+            onPrimary: Colors.white,
+            surface: Colors.white,
+            onSurface: Color(0xFF231919),
+          ),
+        ),
+        child: child!,
+      ),
+    );
+
+    if (picked != null) {
+      await _updateNotificationSettings(hour: picked.hour, minute: picked.minute);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -115,6 +201,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
             // Personal Information
             _buildPersonalInfoSection(user),
+
+            // App Settings
+            _buildAppSettingsSection(),
 
             // Logout
             _buildLogoutSection(),
@@ -601,7 +690,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   // ================================================================
   // APP SETTINGS
   // ================================================================
-  // ignore: unused_element — akan dipakai saat fitur App Settings diaktifkan
   Widget _buildAppSettingsSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -622,15 +710,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         _infoCard([
           _toggleRow(
             icon: Icons.notifications_outlined,
-            title: 'Notifications',
-            isActive: true,
+            title: 'Daily Reminder',
+            isActive: _notificationsEnabled,
+            onChanged: (val) => _updateNotificationSettings(enabled: val),
           ),
-          _divider(),
-          _settingRow(
-            icon: Icons.language_outlined,
-            title: 'Language',
-            trailing: 'Indonesia',
-          ),
+          if (_notificationsEnabled) ...[
+            _divider(),
+            _settingRow(
+              icon: Icons.access_time_outlined,
+              title: 'Reminder Time',
+              trailing: '${_reminderHour.toString().padLeft(2, '0')}:${_reminderMinute.toString().padLeft(2, '0')}',
+              onTap: _selectReminderTime,
+            ),
+          ],
         ]),
       ],
     );
@@ -640,77 +732,81 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     required IconData icon,
     required String title,
     required bool isActive,
+    required ValueChanged<bool> onChanged,
   }) {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: ShapeDecoration(
-                  color: const Color(0xFFF8ECEA),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                child: Icon(icon, color: const Color(0xFFC0004D), size: 24),
-              ),
-              const SizedBox(width: 20),
-              Text(
-                title,
-                style: const TextStyle(
-                  color: Color(0xFF231919),
-                  fontSize: 15,
-                  fontFamily: 'Manrope',
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-          Container(
-            width: 56,
-            height: 32,
-            decoration: ShapeDecoration(
-              color: isActive
-                  ? const Color(0xFFC0004D)
-                  : const Color(0xFFF4DDDD),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppSizes.radiusFull),
-              ),
-            ),
-            child: Stack(
+    return InkWell(
+      onTap: () => onChanged(!isActive),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
               children: [
-                AnimatedPositioned(
-                  duration: const Duration(milliseconds: 200),
-                  left: isActive ? 28 : 4,
-                  top: 4,
-                  child: Container(
-                    width: 24,
-                    height: 24,
-                    decoration: ShapeDecoration(
-                      color: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        side: BorderSide(
-                          width: 1,
-                          color: isActive
-                              ? Colors.white
-                              : const Color(0xFFD1D5DB),
-                        ),
-                        borderRadius: BorderRadius.circular(
-                          AppSizes.radiusFull,
-                        ),
-                      ),
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: ShapeDecoration(
+                    color: const Color(0xFFF8ECEA),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
                     ),
+                  ),
+                  child: Icon(icon, color: const Color(0xFFC0004D), size: 24),
+                ),
+                const SizedBox(width: 20),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Color(0xFF231919),
+                    fontSize: 15,
+                    fontFamily: 'Manrope',
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
             ),
-          ),
-        ],
+            Container(
+              width: 56,
+              height: 32,
+              decoration: ShapeDecoration(
+                color: isActive
+                    ? const Color(0xFFC0004D)
+                    : const Color(0xFFF4DDDD),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+                ),
+              ),
+              child: Stack(
+                children: [
+                  AnimatedPositioned(
+                    duration: const Duration(milliseconds: 200),
+                    left: isActive ? 28 : 4,
+                    top: 4,
+                    child: Container(
+                      width: 24,
+                      height: 24,
+                      decoration: ShapeDecoration(
+                        color: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          side: BorderSide(
+                            width: 1,
+                            color: isActive
+                                ? Colors.white
+                                : const Color(0xFFD1D5DB),
+                          ),
+                          borderRadius: BorderRadius.circular(
+                            AppSizes.radiusFull,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -719,48 +815,52 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     required IconData icon,
     required String title,
     String? trailing,
+    VoidCallback? onTap,
   }) {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: ShapeDecoration(
-              color: const Color(0xFFF8ECEA),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: ShapeDecoration(
+                color: const Color(0xFFF8ECEA),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: Icon(icon, color: const Color(0xFFC0004D), size: 24),
+            ),
+            const SizedBox(width: 20),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  color: Color(0xFF231919),
+                  fontSize: 15,
+                  fontFamily: 'Manrope',
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
-            child: Icon(icon, color: const Color(0xFFC0004D), size: 24),
-          ),
-          const SizedBox(width: 20),
-          Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(
-                color: Color(0xFF231919),
-                fontSize: 15,
-                fontFamily: 'Manrope',
-                fontWeight: FontWeight.w700,
+            if (trailing != null) ...[
+              Text(
+                trailing,
+                style: const TextStyle(
+                  color: Color(0xFF8A7474),
+                  fontSize: 14,
+                  fontFamily: 'Manrope',
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ),
-          ),
-          if (trailing != null) ...[
-            Text(
-              trailing,
-              style: const TextStyle(
-                color: Color(0xFF8A7474),
-                fontSize: 14,
-                fontFamily: 'Manrope',
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(width: 8),
+              const SizedBox(width: 8),
+            ],
+            const Icon(Icons.chevron_right, color: Color(0xFFD8C2C2), size: 24),
           ],
-          const Icon(Icons.chevron_right, color: Color(0xFFD8C2C2), size: 24),
-        ],
+        ),
       ),
     );
   }
@@ -814,7 +914,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
           const SizedBox(height: 32),
           const Text(
-            'PARUKUAT V2.4.0 • BUILT FOR SANCTUARY',
+            'PARUKUAT V1.0.0 • BUILT FOR SANCTUARY',
             style: TextStyle(
               color: Color.fromARGB(255, 117, 117, 117),
               fontSize: 9,

@@ -401,7 +401,6 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
       spacing: AppSizes.lg,
       children: [
         Expanded(child: _buildSessionProgressCard(state)),
-        Expanded(child: _buildBreathingRateCard(state)),
       ],
     );
   }

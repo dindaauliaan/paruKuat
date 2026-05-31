@@ -157,13 +157,13 @@ class _RegisterHeader extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: 24),
-          child: Row(
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Image.asset(
                 'assets/images/LogoParuKuat.png',
-                width: 30,
-                height: 30,
+                width: 250,
+                height: 250,
                 errorBuilder: (_, _, _) => const Icon(
                   Icons.health_and_safety,
                   color: AppColors.primary,
@@ -171,7 +171,7 @@ class _RegisterHeader extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              const Text('ParuKuat', style: AppTextStyles.brandXLarge),
+              const Text('Hai, Calon Pengguna ParuKuat', style: AppTextStyles.brandXLarge, textAlign: TextAlign.center,),
             ],
           ),
         ),
@@ -349,10 +349,6 @@ class _RegisterCard extends StatelessWidget {
           const SizedBox(height: 32),
 
           AuthPrimaryButton(label: 'Daftar', isLoading: isLoading, onPressed: onSubmit),
-          const SizedBox(height: 40),
-          const AuthDividerWithText(label: 'ATAU DAFTAR DENGAN'),
-          const SizedBox(height: 40),
-          const AuthSocialButton(),
         ],
       ),
     );
