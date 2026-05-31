@@ -7,10 +7,11 @@ import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../widgets/bottom_nav.dart';
-import '../domain/exercise_type.dart';
 import '../../auth/presentation/auth_notifier.dart';
+import '../../home/presentation/home_provider.dart';
 import '../domain/breathing_phase.dart';
 import '../domain/breathing_state.dart';
+import '../domain/exercise_type.dart';
 import 'breathing_provider.dart';
 
 /// Guided Breathing Screen — interactive breathing therapy.
@@ -153,12 +154,24 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           GestureDetector(
-            onTap: () {
-              final state = ref.read(breathingNotifierProvider);
-              if (state.isRunning) {
-                ref.read(breathingNotifierProvider.notifier).stopSession();
+            onTap: () async {
+              final notifier = ref.read(breathingNotifierProvider.notifier);
+              final currentState = ref.read(breathingNotifierProvider);
+              final authState = ref.read(authNotifierProvider);
+
+              // Simpan hasil latihan — baik parsial (running) maupun selesai (completed)
+              if (!currentState.sessionSaved &&
+                  currentState.totalSecondsElapsed > 0 &&
+                  authState is AuthAuthenticated) {
+                await notifier.saveSession(authState.user.id);
               }
-              context.go(AppRoutes.home);
+
+              if (currentState.isRunning) {
+                notifier.stopSession();
+              }
+              if (context.mounted) {
+                context.go(AppRoutes.home);
+              }
             },
             child: const Row(
               children: [
@@ -890,8 +903,15 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
       return const SizedBox.shrink(); // handled by _buildCompletionView
     } else if (state.isRunning) {
       icon = Icons.pause_rounded;
-      onTap = () {
-        ref.read(breathingNotifierProvider.notifier).pauseSession();
+      onTap = () async {
+        final notifier = ref.read(breathingNotifierProvider.notifier);
+        final authState = ref.read(authNotifierProvider);
+
+        // Simpan hasil latihan parsial saat pause
+        if (authState is AuthAuthenticated) {
+          await notifier.saveSession(authState.user.id);
+        }
+        notifier.pauseSession();
       };
     } else if (state.totalSecondsElapsed > 0) {
       // Paused — resume
@@ -948,16 +968,6 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
   // ================================================================
   Widget _buildCompletionView(BuildContext context) {
     final state = ref.read(breathingNotifierProvider);
-    final authState = ref.read(authNotifierProvider);
-
-    // Save session log — trigger sekali via microtask (hanya jika belum tersimpan)
-    if (!state.sessionSaved && authState is AuthAuthenticated) {
-      Future.microtask(() {
-        ref
-            .read(breathingNotifierProvider.notifier)
-            .saveSession(authState.user.id);
-      });
-    }
 
     return Center(
       child: Padding(
@@ -1014,9 +1024,27 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
             const Spacer(flex: 1),
             // Kembali button
             GestureDetector(
-              onTap: () {
-                ref.read(breathingNotifierProvider.notifier).stopSession();
-                context.go(AppRoutes.home);
+              onTap: () async {
+                final notifier = ref.read(breathingNotifierProvider.notifier);
+                final currentAuth = ref.read(authNotifierProvider);
+
+                // 1. Simpan hasil latihan dulu — tunggu sampai selesai
+                if (!state.sessionSaved && currentAuth is AuthAuthenticated) {
+                  await notifier.saveSession(currentAuth.user.id);
+                }
+
+                // 2. Stop sesi
+                notifier.stopSession();
+
+                // 3. Invalidate home data agar refetch data terbaru
+                if (currentAuth is AuthAuthenticated) {
+                  ref.invalidate(homeDataProvider(currentAuth.user.id));
+                }
+
+                // 4. Navigasi ke home
+                if (context.mounted) {
+                  context.go(AppRoutes.home);
+                }
               },
               child: Container(
                 width: double.infinity,
