@@ -121,7 +121,9 @@ class BreathingNotifier extends StateNotifier<BreathingState> {
   }
 
   void resumeSession() {
-    state = state.copyWith(isRunning: true);
+    // Reset sessionSaved agar ketika pause/stop berikutnya,
+    // saveSession bisa menyimpan data cycle tambahan
+    state = state.copyWith(isRunning: true, sessionSaved: false);
     _startTimer();
   }
 
@@ -260,15 +262,29 @@ class BreathingNotifier extends StateNotifier<BreathingState> {
   // ── Save hasil ───────────────────────────────────────────────────
 
   /// Simpan ExerciseLog setelah sesi selesai.
-  Future<void> saveSession(int userId) async {
-    if (!state.isCompleted || state.sessionSaved) return;
+  ///
+  /// Bisa dipanggil kapan saja — baik sesi penuh (`isCompleted`) maupun
+  /// sesi parsial (user pause/stop di tengah jalan). Data yang disimpan
+  /// berdasarkan jumlah cycle yang sudah benar-benar diselesaikan.
+  ///
+  /// Returns `true` jika berhasil, `false` jika gagal disimpan.
+  /// Caller bisa menggunakan return value untuk retry atau indikasi error.
+  Future<bool> saveSession(int userId) async {
+    if (state.sessionSaved) return true;
+    if (state.totalSecondsElapsed == 0) return true; // belum ada progress
+
+    // Jumlah cycle yang benar-benar selesai
+    // currentCycle = cycle yang sedang dikerjakan → completed = currentCycle - 1
+    final completedCycles = state.isCompleted
+        ? state.totalCycles
+        : (state.currentCycle - 1).clamp(1, state.totalCycles);
 
     final vitalCapacity =
-        SupabaseBreathingRepository.simulateVitalCapacity(state.totalCycles);
+        SupabaseBreathingRepository.simulateVitalCapacity(completedCycles);
     final oxygenLevel = SupabaseBreathingRepository.simulateOxygenLevel();
     final breathingRate =
         SupabaseBreathingRepository.calculateBreathingRate(
-      state.totalCycles,
+      completedCycles,
       state.totalSecondsElapsed,
     );
 
@@ -281,9 +297,11 @@ class BreathingNotifier extends StateNotifier<BreathingState> {
         breathingRate: breathingRate,
       );
       state = state.copyWith(sessionSaved: true);
-    } catch (_) {
-      // Gagal save — tidak critical, tetap anggap sesi selesai
-      state = state.copyWith(sessionSaved: true);
+      return true;
+    } catch (e) {
+      debugPrint('❌ Gagal simpan exercise log: $e');
+      // Jangan mark sessionSaved agar retry bisa dilakukan
+      return false;
     }
   }
 }

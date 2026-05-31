@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../domain/breathing_repository.dart';
@@ -20,11 +21,35 @@ class SupabaseBreathingRepository implements BreathingRepository {
           .select('id, name, description, recommendation_text, duration_seconds')
           .order('id', ascending: true);
 
+      // Jika tabel kosong, seed dengan data default
+      if (data.isEmpty) {
+        await _seedExerciseTypes();
+        return _defaultExerciseTypes();
+      }
+
       return data.map((json) => _exerciseTypeFromJson(json)).toList();
     } catch (_) {
-      // Fallback hardcoded jika query gagal atau tabel kosong
+      // Fallback hardcoded jika query gagal
       return _defaultExerciseTypes();
     }
+  }
+
+  /// Seed tabel `exercise_types` dengan data default jika kosong.
+  Future<void> _seedExerciseTypes() async {
+    final defaults = _defaultExerciseTypes();
+    for (final type in defaults) {
+      await _client.from('exercise_types').upsert(
+        {
+          'id': type.id,
+          'name': type.name,
+          'description': type.description,
+          'recommendation_text': type.recommendationText,
+          'duration_seconds': type.durationSeconds,
+        },
+        onConflict: 'id',
+      );
+    }
+    debugPrint('✅ exercise_types table seeded with ${defaults.length} entries');
   }
 
   @override
@@ -35,6 +60,9 @@ class SupabaseBreathingRepository implements BreathingRepository {
     double? oxygenLevel,
     double? breathingRate,
   }) async {
+    // Pastikan exercise_type_id valid dengan upsert terlebih dulu
+    await _ensureExerciseTypeExists(exerciseTypeId);
+
     await _client.from('exercise_logs').insert({
       'user_id': userId,
       'exercise_type_id': exerciseTypeId,
@@ -45,7 +73,37 @@ class SupabaseBreathingRepository implements BreathingRepository {
     });
   }
 
-  /// Fallback jika tabel exercise_types kosong atau gagal fetch.
+  /// Pastikan row dengan [exerciseTypeId] ada di tabel `exercise_types`.
+  /// Jika belum ada, insert data default agar FK constraint tidak gagal.
+  Future<void> _ensureExerciseTypeExists(int exerciseTypeId) async {
+    final existing = await _client
+        .from('exercise_types')
+        .select('id')
+        .eq('id', exerciseTypeId)
+        .maybeSingle();
+
+    if (existing != null) return; // sudah ada
+
+    // Cari dari default list
+    final defaults = _defaultExerciseTypes();
+    final match = defaults.where((t) => t.id == exerciseTypeId);
+    if (match.isNotEmpty) {
+      final type = match.first;
+      await _client.from('exercise_types').upsert(
+        {
+          'id': type.id,
+          'name': type.name,
+          'description': type.description,
+          'recommendation_text': type.recommendationText,
+          'duration_seconds': type.durationSeconds,
+        },
+        onConflict: 'id',
+      );
+      debugPrint('✅ exercise_type id=$exerciseTypeId inserted on-the-fly');
+    }
+  }
+
+  /// Data default exercise types (hardcoded fallback).
   List<ExerciseType> _defaultExerciseTypes() {
     return [
       ExerciseType(

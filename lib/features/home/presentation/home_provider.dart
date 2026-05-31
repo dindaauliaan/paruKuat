@@ -20,7 +20,7 @@ final homeRepositoryProvider = Provider<HomeRepository>((ref) {
 /// - `AsyncValue` sudah handle loading / error / data
 /// - `family` otomatis refresh jika userId berubah (misal logout → login beda user)
 /// - Tidak perlu StateNotifier manual untuk kasus simple load
-final homeDataProvider = FutureProvider.family<HomeData, int>((ref, userId) {
+final homeDataProvider = FutureProvider.family.autoDispose<HomeData, int>((ref, userId) {
   final repository = ref.watch(homeRepositoryProvider);
   return repository.getHomeData(userId);
 });
