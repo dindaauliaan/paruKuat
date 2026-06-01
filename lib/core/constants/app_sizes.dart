@@ -25,17 +25,17 @@ abstract final class AppSizes {
   /// 24px — padding horizontal halaman auth, gap form fields
   static const double xxl = 24.0;
 
-  /// 27px — gap icon ke info di metric cards
-  static const double iconToInfo = 27.0;
+  /// 20px — gap icon ke info di metric cards
+  static const double iconToInfo = 20.0;
 
-  /// 28px — Column spacing di home_page
-  static const double sectionGap = 28.0;
+  /// 24px — Column spacing di home_page
+  static const double sectionGap = 24.0;
 
-  /// 32px — padding card content, side padding metric card
-  static const double cardPaddingInner = 32.0;
+  /// 20px — padding card content, side padding metric card
+  static const double cardPaddingInner = 20.0;
 
-  /// 33px — padding card besar (recommendation, trend cards)
-  static const double cardPaddingLarge = 33.0;
+  /// 24px — padding card besar (recommendation, trend cards)
+  static const double cardPaddingLarge = 24.0;
 
   /// 40px — gap antara form section di login card
   static const double formSectionGap = 40.0;
@@ -80,7 +80,7 @@ abstract final class AppSizes {
   static const double iconMd = 24.0;
 
   /// Icon besar — icon box metric cards
-  static const double iconLg = 40.0;
+  static const double iconLg = 28.0;
 
   // ================================================================
   // COMPONENT SIZES
@@ -90,7 +90,7 @@ abstract final class AppSizes {
   static const double avatarSize = 40.0;
 
   /// Icon box metric cards (width & height)
-  static const double metricIconBox = 80.0;
+  static const double metricIconBox = 60.0;
 
   /// Tinggi tombol CTA standar
   static const double buttonHeight = 60.0;
@@ -106,19 +106,19 @@ abstract final class AppSizes {
   // ================================================================
 
   /// Tinggi card rekomendasi harian
-  static const double cardRecommendation = 397.0;
+  static const double cardRecommendation = 310.0;
 
   /// Tinggi card Kapasitas Vital
-  static const double cardVitalCapacity = 154.0;
+  static const double cardVitalCapacity = 120.0;
 
   /// Tinggi card Kualitas Oksigen
-  static const double cardOxygenQuality = 159.0;
+  static const double cardOxygenQuality = 120.0;
 
   /// Tinggi card Tren Pernapasan
-  static const double cardBreathingTrend = 366.0;
+  static const double cardBreathingTrend = 300.0;
 
   /// Tinggi bar chart di Tren Pernapasan
-  static const double chartBarMaxHeight = 192.0;
+  static const double chartBarMaxHeight = 140.0;
 
   // ================================================================
   // BOTTOM NAV

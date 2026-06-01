@@ -192,7 +192,6 @@ class _HomeContent extends ConsumerWidget {
             const SizedBox(height: AppSizes.lg),
             _GreetingSection(
               userName: homeData.userName,
-              streak: homeData.currentStreak,
             ),
             _RecommendationCard(
               title: homeData.recommendationTitle,
@@ -216,15 +215,13 @@ class _HomeContent extends ConsumerWidget {
 // ====================================================================
 class _GreetingSection extends StatelessWidget {
   final String userName;
-  final int streak;
 
-  const _GreetingSection({required this.userName, required this.streak});
+  const _GreetingSection({required this.userName});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      spacing: 7,
       children: [
         Padding(
           padding: EdgeInsetsGeometry.symmetric(horizontal: AppSizes.md),
@@ -235,53 +232,24 @@ class _GreetingSection extends StatelessWidget {
             children: [
               Text(
                 'Halo, $userName',
-                style: AppTextStyles.displayLarge,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primary,
+                ),
               ),
-              if (streak > 0)
-                const _StreakBadge(),
             ],
           ),
         ),
+        const SizedBox(height: 6),
         Padding(
           padding: EdgeInsetsGeometry.symmetric(horizontal: AppSizes.md),
-          child: Text(
-            streak > 0
-                ? 'Streak $streak hari! Hari yang luar biasa! 🔥\nSudah siap untuk latihan pernapasan hari ini?'
-                : 'Kondisi paru-paru Anda stabil hari ini.\nSudah siap untuk latihan pernapasan hari ini?',
-            style: AppTextStyles.bodyPrimary,
-          ),
         ),
       ],
     );
   }
 }
 
-/// Badge streak kecil di samping greeting.
-class _StreakBadge extends StatelessWidget {
-  const _StreakBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: ShapeDecoration(
-        color: AppColors.accentPinkBadge,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSizes.radiusFull),
-        ),
-      ),
-      child: const Text(
-        '🔥 Streak',
-        style: TextStyle(
-          fontFamily: 'Manrope',
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color: AppColors.primary,
-        ),
-      ),
-    );
-  }
-}
 
 // ====================================================================
 // RECOMMENDATION CARD
@@ -322,7 +290,16 @@ class _RecommendationCard extends StatelessWidget {
           children: [
             Text('REKOMENDASI HARI INI', style: AppTextStyles.labelLarge),
             const SizedBox(height: AppSizes.sm),
-            Text(title, style: AppTextStyles.displayDark),
+            Text(
+              title,
+              style: const TextStyle(
+                fontFamily: 'Manrope',
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+                height: 1.25,
+              ),
+            ),
             const SizedBox(height: AppSizes.sm),
             Text(description, style: AppTextStyles.bodyMedium),
             const Spacer(),
@@ -330,8 +307,7 @@ class _RecommendationCard extends StatelessWidget {
             GestureDetector(
               onTap: () => context.go(AppRoutes.breathing),
               child: Container(
-                width: 203.42,
-                height: AppSizes.buttonHeight,
+                height: 52,
                 decoration: ShapeDecoration(
                   gradient: AppColors.ctaCardGradient,
                   shape: RoundedRectangleBorder(
@@ -535,7 +511,7 @@ class _BreathingTrendCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: AppSizes.xl),
+            const SizedBox(height: AppSizes.lg),
             // Bar chart
             SizedBox(
               height: AppSizes.chartBarMaxHeight,

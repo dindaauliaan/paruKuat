@@ -134,69 +134,72 @@ class _GameScreenState extends ConsumerState<GameScreen>
   }
 
   // ================================================================
-  // IDLE STATE — Preview + Start Button
+  // IDLE STATE — Preview + Start Button (no scroll needed)
   // ================================================================
   Widget _buildIdleState(BuildContext context) {
     final gameState = ref.watch(gameNotifierProvider);
     final isMicDenied = gameState.micPermissionStatus == 2;
 
-    return SingleChildScrollView(
+    return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
         children: [
-          const SizedBox(height: 24),
-          // Instruction text
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.65),
-              borderRadius: BorderRadius.circular(AppSizes.radiusCard),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-            ),
-            child: Column(
-              children: [
-                const Text(
-                  'Balloon Breathing Game',
-                  style: TextStyle(
-                    fontFamily: 'Manrope',
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primary,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  isMicDenied
-                      ? 'Tap & hold untuk mengembangkan balon\n'
-                            'dengan napas Anda.\n\n'
-                            'Jaga balon tetap terbang selama 60 detik\n'
-                            'tanpa membuatnya meledak!'
-                      : 'Tiup ke mikrofon untuk mengembangkan\n'
-                            'balon dengan napas Anda.\n\n'
-                            'Jaga balon tetap terbang selama 60 detik\n'
-                            'tanpa membuatnya meledak!',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontFamily: 'Manrope',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    color: AppColors.textSecondary,
-                    height: 1.6,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Mode badge
-                _buildModeBadge(isMicDenied),
-              ],
+          const SizedBox(height: 12),
+          // ── Instruction card (compact) ──
+          _buildInstructionCard(isMicDenied),
+          const SizedBox(height: 12),
+          // ── Balloon preview fills remaining space ──
+          Expanded(
+            child: _buildBalloonPreview(),
+          ),
+          const SizedBox(height: 12),
+          // ── Start button ──
+          _buildStartButton(),
+          const SizedBox(height: 12),
+        ],
+      ),
+    );
+  }
+
+  /// Compact instruction card for idle state.
+  Widget _buildInstructionCard(bool isMicDenied) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.65),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        children: [
+          const Text(
+            'Balloon Breathing Game',
+            style: TextStyle(
+              fontFamily: 'Manrope',
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: AppColors.primary,
             ),
           ),
-          const SizedBox(height: 32),
-          // Preview balloon (static small)
-          _buildBalloonPreview(),
-          const SizedBox(height: 32),
-          // Start button
-          _buildStartButton(),
-          const SizedBox(height: 24),
+          const SizedBox(height: 8),
+          Text(
+            isMicDenied
+                ? 'Tap & hold untuk mengembangkan balon.\n'
+                      'Jaga balon tetap terbang selama 60 detik!'
+                : 'Tiup ke mikrofon untuk mengembangkan balon.\n'
+                      'Jaga balon tetap terbang selama 60 detik!',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontFamily: 'Manrope',
+              fontSize: 13,
+              fontWeight: FontWeight.w400,
+              color: AppColors.textSecondary,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildModeBadge(isMicDenied),
         ],
       ),
     );
@@ -233,56 +236,87 @@ class _GameScreenState extends ConsumerState<GameScreen>
     );
   }
 
-  /// Small static balloon preview for idle state.
+  /// Adaptive balloon preview — scales to fill available space.
   Widget _buildBalloonPreview() {
-    return SizedBox(
-      height: 280,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Strings
-          Positioned(
-            bottom: 60,
-            child: Row(
-              spacing: 20,
-              children: [
-                Container(width: 2, height: 24, color: const Color(0xFFE4A475)),
-                Container(width: 2, height: 24, color: const Color(0xFFE4A475)),
-              ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final h = constraints.maxHeight;
+        // Scale factor based on available height (baseline = 280)
+        final s = (h / 280).clamp(0.5, 1.2);
+        // Balloon size for preview (smaller than gameplay)
+        final balloonSize = (0.35 * s).clamp(0.18, 0.5);
+
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            // Decorative clouds (scaled)
+            Positioned(
+              top: 8 * s,
+              left: 4 * s,
+              child: _buildCloud(36 * s, 14 * s, 0.3),
             ),
-          ),
-          // Basket
-          Positioned(
-            bottom: 35,
-            child: Container(
-              width: 48,
-              height: 28,
-              decoration: BoxDecoration(
-                color: const Color(0xFFB56A41),
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 6,
-                    offset: Offset(0, 3),
-                  ),
+            Positioned(
+              top: 28 * s,
+              right: 8 * s,
+              child: _buildCloud(44 * s, 12 * s, 0.25),
+            ),
+            // Strings
+            Positioned(
+              bottom: 44 * s,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                spacing: 16 * s,
+                children: [
+                  Container(width: 2, height: 18 * s, color: const Color(0xFFE4A475)),
+                  Container(width: 2, height: 18 * s, color: const Color(0xFFE4A475)),
                 ],
               ),
-              child: Center(
-                child: Container(
-                  width: 12,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF763D1E),
-                    borderRadius: BorderRadius.circular(6),
+            ),
+            // Basket
+            Positioned(
+              bottom: 22 * s,
+              child: Container(
+                width: 40 * s,
+                height: 24 * s,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFB56A41),
+                  borderRadius: BorderRadius.circular(12 * s),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 6,
+                      offset: Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Container(
+                    width: 10 * s,
+                    height: 6 * s,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF763D1E),
+                      borderRadius: BorderRadius.circular(5 * s),
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-          // Balloon body
-          _buildBalloonBody(size: 0.45),
-        ],
+            // Balloon body
+            _buildBalloonBody(size: balloonSize),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Small decorative cloud element.
+  Widget _buildCloud(double width, double height, double opacity) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: opacity),
+        borderRadius: BorderRadius.circular(width / 2),
       ),
     );
   }
