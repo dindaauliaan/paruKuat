@@ -108,31 +108,47 @@ class SupabaseHomeRepository implements HomeRepository {
 
   /// Bangun list 7 hari terakhir untuk bar chart.
   /// Nilai dinormalisasi 0.0 – 1.0 berdasarkan max value di 7 hari.
+  /// Menyertakan oxygen level, session count, dan actual value per hari.
   List<TrendDataPoint> _buildWeeklyTrend(List<_ParsedLog> logs) {
     final today = DateTime.now();
     final dailyValues = <double>[];
+    final dailyOxygen = <double>[];
+    final dailySessionCount = <int>[];
 
-    // Hitung rata-rata vital capacity per hari
+    // Hitung rata-rata vital capacity & oxygen per hari
     for (int i = 6; i >= 0; i--) {
       final date = DateTime(today.year, today.month, today.day - i);
       final dayLogs = logs.where((l) =>
           l.completedAt.year == date.year &&
           l.completedAt.month == date.month &&
-          l.completedAt.day == date.day);
+          l.completedAt.day == date.day).toList();
 
-      final values =
-          dayLogs.where((l) => l.vitalCapacity != null).map((l) => l.vitalCapacity!).toList();
+      // Vital capacity
+      final vcValues = dayLogs
+          .where((l) => l.vitalCapacity != null)
+          .map((l) => l.vitalCapacity!)
+          .toList();
+      final avgVc = vcValues.isEmpty ? 0.0 : vcValues.reduce((a, b) => a + b) / vcValues.length;
+      dailyValues.add(avgVc);
 
-      final avg =
-          values.isEmpty ? 0.0 : values.reduce((a, b) => a + b) / values.length;
-      dailyValues.add(avg);
+      // Oxygen level
+      final o2Values = dayLogs
+          .where((l) => l.oxygenLevel != null)
+          .map((l) => l.oxygenLevel!)
+          .toList();
+      final avgO2 = o2Values.isEmpty ? 0.0 : o2Values.reduce((a, b) => a + b) / o2Values.length;
+      dailyOxygen.add(avgO2);
+
+      // Session count
+      dailySessionCount.add(dayLogs.length);
     }
 
-    // Normalisasi 0.0 – 1.0
+    // Normalisasi 0.0 – 1.0, dengan minimum 0.04 untuk hari tanpa data
+    // sehingga bar tetap terlihat (menandakan hari itu ada)
     final maxValue = dailyValues.reduce((a, b) => a > b ? a : b);
     final normalized = maxValue > 0
-        ? dailyValues.map((v) => v / maxValue).toList()
-        : List.filled(7, 0.05); // fallback kecil jika semua 0
+        ? dailyValues.map((v) => v > 0 ? (v / maxValue).clamp(0.04, 1.0) : 0.04).toList()
+        : List.filled(7, 0.04); // fallback kecil jika semua 0
 
     const dayLabels = ['MIN', 'SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB'];
 
@@ -142,6 +158,8 @@ class SupabaseHomeRepository implements HomeRepository {
         dayLabel: dayLabels[date.weekday % 7],
         normalizedValue: normalized[i],
         actualValue: dailyValues[i],
+        oxygenLevel: dailyOxygen[i],
+        sessionCount: dailySessionCount[i],
         isToday: i == 6,
       );
     });

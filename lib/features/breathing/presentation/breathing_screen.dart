@@ -169,6 +169,8 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
                   currentState.totalSecondsElapsed > 0 &&
                   authState is AuthAuthenticated) {
                 await notifier.saveSession(authState.user.id);
+                // Invalidate home data agar grafik tren langsung update
+                ref.invalidate(homeDataProvider(authState.user.id));
               }
 
               if (currentState.isRunning) {

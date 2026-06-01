@@ -115,7 +115,7 @@ abstract final class AppSizes {
   static const double cardOxygenQuality = 120.0;
 
   /// Tinggi card Tren Pernapasan
-  static const double cardBreathingTrend = 300.0;
+  static const double cardBreathingTrend = 340.0;
 
   /// Tinggi bar chart di Tren Pernapasan
   static const double chartBarMaxHeight = 140.0;
