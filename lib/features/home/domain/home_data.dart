@@ -57,6 +57,12 @@ class TrendDataPoint {
   /// Nilai asli (liter) untuk ditampilkan di tooltip / label
   final double actualValue;
 
+  /// Rata-rata oxygen level hari itu (0-100%)
+  final double oxygenLevel;
+
+  /// Jumlah sesi breathing hari itu
+  final int sessionCount;
+
   /// Apakah ini hari ini (bar aktif dengan border)
   final bool isToday;
 
@@ -64,6 +70,8 @@ class TrendDataPoint {
     required this.dayLabel,
     required this.normalizedValue,
     required this.actualValue,
+    this.oxygenLevel = 0.0,
+    this.sessionCount = 0,
     required this.isToday,
   });
 }

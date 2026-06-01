@@ -27,11 +27,11 @@ abstract final class AppTextStyles {
     letterSpacing: -1.20,
   );
 
-  /// Logo brand di header auth (30px, ExtraBold)
+  /// Logo brand di header auth (36px, ExtraBold)
   static const TextStyle brandXLarge = TextStyle(
     fontFamily: _font,
     color: AppColors.primary,
-    fontSize: 30,
+    fontSize: 36,
     fontWeight: FontWeight.w800,
     height: 1.20,
     letterSpacing: -1.50,

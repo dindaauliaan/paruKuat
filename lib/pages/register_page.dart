@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -8,7 +8,7 @@ import '../core/router/app_routes.dart';
 import '../features/auth/presentation/auth_notifier.dart';
 import '../features/auth/presentation/auth_widgets.dart';
 
-/// Register screen — terhubung ke AuthNotifier via Riverpod.
+/// Register screen â€” terhubung ke AuthNotifier via Riverpod.
 class RegisterParukuat extends ConsumerStatefulWidget {
   const RegisterParukuat({super.key});
 
@@ -162,15 +162,15 @@ class _RegisterHeader extends StatelessWidget {
             children: [
               Image.asset(
                 'assets/images/LogoParuKuat.png',
-                width: 30,
-                height: 30,
+                width: 64,
+                height: 64,
                 errorBuilder: (_, _, _) => const Icon(
                   Icons.health_and_safety,
                   color: AppColors.primary,
-                  size: 30,
+                  size: 56,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               const Text('ParuKuat', style: AppTextStyles.brandXLarge),
             ],
           ),
@@ -299,7 +299,7 @@ class _RegisterCard extends StatelessWidget {
               return null;
             },
             decoration: authInputDecoration(
-              hint: '••••••••',
+              hint: '',
               icon: Icons.lock_outline,
               suffix: Padding(
                 padding: const EdgeInsets.only(right: 8),
@@ -349,10 +349,6 @@ class _RegisterCard extends StatelessWidget {
           const SizedBox(height: 32),
 
           AuthPrimaryButton(label: 'Daftar', isLoading: isLoading, onPressed: onSubmit),
-          const SizedBox(height: 40),
-          const AuthDividerWithText(label: 'ATAU DAFTAR DENGAN'),
-          const SizedBox(height: 40),
-          const AuthSocialButton(),
         ],
       ),
     );

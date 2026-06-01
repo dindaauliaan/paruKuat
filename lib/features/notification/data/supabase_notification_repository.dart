@@ -38,6 +38,32 @@ class SupabaseNotificationRepository implements NotificationRepository {
         .eq('is_read', false);
   }
 
+  @override
+  Future<void> addNotification(int userId, String title, String message, {DateTime? sentAt}) async {
+    await _client.from('notifications').insert({
+      'user_id': userId,
+      'title': title,
+      'message': message,
+      'is_read': false,
+      'sent_at': (sentAt ?? DateTime.now()).toIso8601String(),
+    });
+  }
+
+  @override
+  Future<void> deleteNotification(int notificationId) async {
+    await _client.from('notifications').delete().eq('id', notificationId);
+  }
+
+  @override
+  Future<void> deleteOldNotifications(int userId, Duration olderThan) async {
+    final threshold = DateTime.now().subtract(olderThan);
+    await _client
+        .from('notifications')
+        .delete()
+        .eq('user_id', userId)
+        .lt('sent_at', threshold.toIso8601String());
+  }
+
   // ================================================================
   // HELPER — Map JSON ke domain entity
   // ================================================================

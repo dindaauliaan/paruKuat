@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -8,7 +8,7 @@ import '../core/router/app_routes.dart';
 import '../features/auth/presentation/auth_notifier.dart';
 import '../features/auth/presentation/auth_widgets.dart';
 
-/// Login screen — terhubung ke AuthNotifier via Riverpod.
+/// Login screen â€” terhubung ke AuthNotifier via Riverpod.
 class LoginParukuat extends ConsumerStatefulWidget {
   const LoginParukuat({super.key});
 
@@ -39,9 +39,7 @@ class _LoginParukuatState extends ConsumerState<LoginParukuat> {
 
   @override
   Widget build(BuildContext context) {
-    final availHeight = MediaQuery.of(context).size.height -
-        MediaQuery.of(context).padding.top -
-        MediaQuery.of(context).padding.bottom;
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     ref.listen<AuthState>(authNotifierProvider, (_, next) {
       if (next is AuthAuthenticated) {
@@ -68,6 +66,7 @@ class _LoginParukuatState extends ConsumerState<LoginParukuat> {
         decoration: const BoxDecoration(gradient: AppColors.bgGradient),
         child: SafeArea(
           child: SingleChildScrollView(
+            padding: EdgeInsets.only(bottom: bottomInset + 24),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: Form(
@@ -75,9 +74,9 @@ class _LoginParukuatState extends ConsumerState<LoginParukuat> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    SizedBox(height: availHeight * 0.07),
+                    const SizedBox(height: 48),
                     const _LoginHeader(),
-                    SizedBox(height: availHeight * 0.03),
+                    const SizedBox(height: 32),
                     _LoginCard(
                       emailController: _emailController,
                       passwordController: _passwordController,
@@ -87,9 +86,9 @@ class _LoginParukuatState extends ConsumerState<LoginParukuat> {
                           setState(() => _obscurePassword = !_obscurePassword),
                       onSubmit: _submit,
                     ),
-                    SizedBox(height: availHeight * 0.04),
+                    const SizedBox(height: 24),
                     _LoginFooter(isLoading: isLoading),
-                    SizedBox(height: availHeight * 0.04),
+                    const SizedBox(height: 32),
                   ],
                 ),
               ),
@@ -111,8 +110,8 @@ class _LoginHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        // Logo ParuKuat
         Padding(
           padding: const EdgeInsets.only(bottom: 24),
           child: Row(
@@ -120,45 +119,37 @@ class _LoginHeader extends StatelessWidget {
             children: [
               Image.asset(
                 'assets/images/LogoParuKuat.png',
-                width: 30,
-                height: 30,
+                width: 64,
+                height: 64,
                 errorBuilder: (_, _, _) => const Icon(
                   Icons.health_and_safety,
                   color: AppColors.primary,
-                  size: 30,
+                  size: 56,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               const Text('ParuKuat', style: AppTextStyles.brandXLarge),
             ],
           ),
         ),
+        // Selamat Datang Kembali
         const Padding(
           padding: EdgeInsets.only(bottom: 12),
           child: Text(
             'Selamat Datang\nKembali',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: 'Manrope',
-              color: AppColors.primary,
-              fontSize: 36,
-              fontWeight: FontWeight.w800,
-              height: 1.11,
-              letterSpacing: -0.90,
-            ),
+            style: AppTextStyles.displayLarge,
           ),
         ),
-        ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 320),
-          child: const Text(
-            'Silakan masuk untuk melanjutkan\nperjalanan kesehatan paru Anda.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: 'Manrope',
-              color: AppColors.textSecondary,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              height: 1.63,
+        // Subtitle
+        Padding(
+          padding: EdgeInsets.only(bottom: 4),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 320),
+            child: const Text(
+              'Silakan masuk untuk melanjutkan\nperjalanan kesehatan paru Anda.',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.bodyMediumWeight,
             ),
           ),
         ),
@@ -191,12 +182,12 @@ class _LoginCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       decoration: ShapeDecoration(
         color: AppColors.cardSurface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(48)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(36)),
         shadows: const [
-          BoxShadow(color: AppColors.shadowPink, blurRadius: 100, offset: Offset(0, 40)),
+          BoxShadow(color: AppColors.shadowPink, blurRadius: 60, offset: Offset(0, 30)),
         ],
       ),
       child: Column(
@@ -204,7 +195,7 @@ class _LoginCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const AuthFieldLabel(label: 'EMAIL'),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           TextFormField(
             controller: emailController,
             keyboardType: TextInputType.emailAddress,
@@ -217,9 +208,9 @@ class _LoginCard extends StatelessWidget {
             },
             decoration: authInputDecoration(hint: 'nama@email.com', icon: Icons.mail_outline),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 12),
           const AuthFieldLabel(label: 'KATA SANDI'),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           TextFormField(
             controller: passwordController,
             obscureText: obscurePassword,
@@ -231,7 +222,7 @@ class _LoginCard extends StatelessWidget {
               return null;
             },
             decoration: authInputDecoration(
-              hint: '••••••••',
+              hint: '',
               icon: Icons.lock_outline,
               suffix: Padding(
                 padding: const EdgeInsets.only(right: 8),
@@ -246,26 +237,19 @@ class _LoginCard extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
           const Align(
             alignment: Alignment.centerRight,
             child: Text(
               'Lupa Kata Sandi?',
-              style: TextStyle(
-                fontFamily: 'Manrope',
-                color: AppColors.textLink,
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                height: 1.43,
-              ),
+              style: AppTextStyles.captionBold,
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
+
+          
           AuthPrimaryButton(label: 'Masuk', isLoading: isLoading, onPressed: onSubmit),
-          const SizedBox(height: 40),
-          const AuthDividerWithText(label: 'ATAU MASUK DENGAN'),
-          const SizedBox(height: 40),
-          const AuthSocialButton(),
+          const SizedBox(height: 30),
         ],
       ),
     );
