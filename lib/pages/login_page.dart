@@ -39,9 +39,7 @@ class _LoginParukuatState extends ConsumerState<LoginParukuat> {
 
   @override
   Widget build(BuildContext context) {
-    final availHeight = MediaQuery.of(context).size.height -
-        MediaQuery.of(context).padding.top -
-        MediaQuery.of(context).padding.bottom;
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     ref.listen<AuthState>(authNotifierProvider, (_, next) {
       if (next is AuthAuthenticated) {
@@ -68,6 +66,7 @@ class _LoginParukuatState extends ConsumerState<LoginParukuat> {
         decoration: const BoxDecoration(gradient: AppColors.bgGradient),
         child: SafeArea(
           child: SingleChildScrollView(
+            padding: EdgeInsets.only(bottom: bottomInset + 24),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: Form(
@@ -75,9 +74,9 @@ class _LoginParukuatState extends ConsumerState<LoginParukuat> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    SizedBox(height: availHeight * 0.07),
+                    const SizedBox(height: 12),
                     const _LoginHeader(),
-                    SizedBox(height: availHeight * 0.03),
+                    const SizedBox(height: 12),
                     _LoginCard(
                       emailController: _emailController,
                       passwordController: _passwordController,
@@ -87,9 +86,9 @@ class _LoginParukuatState extends ConsumerState<LoginParukuat> {
                           setState(() => _obscurePassword = !_obscurePassword),
                       onSubmit: _submit,
                     ),
-                    SizedBox(height: availHeight * 0.04),
+                    const SizedBox(height: 16),
                     _LoginFooter(isLoading: isLoading),
-                    SizedBox(height: availHeight * 0.04),
+                    const SizedBox(height: 12),
                   ],
                 ),
               ),
@@ -111,55 +110,51 @@ class _LoginHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 24),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
+        // Logo ParuKuat
+        Image.asset(
+          'assets/images/LogoParuKuat.png',
+          width: 200,
+          height: 200,
+          errorBuilder: (_, _, _) => const Icon(
+            Icons.health_and_safety,
+            color: AppColors.primary,
+            size: 150,
+          ),
+        ),
+        // Selamat Datang Kembali
+        Transform.translate(
+          offset: const Offset(0, -30),
+          child: Column(
             children: [
-              Image.asset(
-                'assets/images/LogoParuKuat.png',
-                width: 30,
-                height: 30,
-                errorBuilder: (_, _, _) => const Icon(
-                  Icons.health_and_safety,
-                  color: AppColors.primary,
-                  size: 30,
+              const Padding(
+                padding: EdgeInsets.only(bottom: 8),
+                child: Text(
+                  'Selamat Datang Kembali',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Manrope',
+                    color: AppColors.primary,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    height: 1.0,
+                    letterSpacing: -0.80,
+                  ),
                 ),
               ),
-              const SizedBox(width: 8),
-              const Text('ParuKuat', style: AppTextStyles.brandXLarge),
+              // Subtitle
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 320),
+                  child: const Text(
+                    'Silakan masuk untuk melanjutkan\nperjalanan kesehatan paru Anda.',
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.bodyMediumWeight,
+                  ),
+                ),
+              ),
             ],
-          ),
-        ),
-        const Padding(
-          padding: EdgeInsets.only(bottom: 12),
-          child: Text(
-            'Selamat Datang\nKembali',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: 'Manrope',
-              color: AppColors.primary,
-              fontSize: 36,
-              fontWeight: FontWeight.w800,
-              height: 1.11,
-              letterSpacing: -0.90,
-            ),
-          ),
-        ),
-        ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 320),
-          child: const Text(
-            'Silakan masuk untuk melanjutkan\nperjalanan kesehatan paru Anda.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: 'Manrope',
-              color: AppColors.textSecondary,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              height: 1.63,
-            ),
           ),
         ),
       ],
@@ -191,12 +186,12 @@ class _LoginCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       decoration: ShapeDecoration(
         color: AppColors.cardSurface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(48)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(36)),
         shadows: const [
-          BoxShadow(color: AppColors.shadowPink, blurRadius: 100, offset: Offset(0, 40)),
+          BoxShadow(color: AppColors.shadowPink, blurRadius: 60, offset: Offset(0, 30)),
         ],
       ),
       child: Column(
@@ -204,7 +199,7 @@ class _LoginCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const AuthFieldLabel(label: 'EMAIL'),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           TextFormField(
             controller: emailController,
             keyboardType: TextInputType.emailAddress,
@@ -217,9 +212,9 @@ class _LoginCard extends StatelessWidget {
             },
             decoration: authInputDecoration(hint: 'nama@email.com', icon: Icons.mail_outline),
           ),
-          const SizedBox(height: 24),
-          const AuthFieldLabel(label: 'KATA SANDI'),
           const SizedBox(height: 8),
+          const AuthFieldLabel(label: 'KATA SANDI'),
+          const SizedBox(height: 6),
           TextFormField(
             controller: passwordController,
             obscureText: obscurePassword,
@@ -246,7 +241,7 @@ class _LoginCard extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
           const Align(
             alignment: Alignment.centerRight,
             child: Text(
@@ -260,12 +255,9 @@ class _LoginCard extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           AuthPrimaryButton(label: 'Masuk', isLoading: isLoading, onPressed: onSubmit),
-          const SizedBox(height: 40),
-          const AuthDividerWithText(label: 'ATAU MASUK DENGAN'),
-          const SizedBox(height: 40),
-          const AuthSocialButton(),
+          const SizedBox(height: 30),
         ],
       ),
     );

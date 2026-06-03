@@ -77,10 +77,6 @@ class _RegisterParukuatState extends ConsumerState<RegisterParukuat> {
 
   @override
   Widget build(BuildContext context) {
-    final availHeight = MediaQuery.of(context).size.height -
-        MediaQuery.of(context).padding.top -
-        MediaQuery.of(context).padding.bottom;
-
     ref.listen<AuthState>(authNotifierProvider, (_, next) {
       if (next is AuthAuthenticated) {
         context.go(AppRoutes.home);
@@ -113,9 +109,9 @@ class _RegisterParukuatState extends ConsumerState<RegisterParukuat> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    SizedBox(height: availHeight * 0.06),
+                    const SizedBox(height: 12),
                     const _RegisterHeader(),
-                    SizedBox(height: availHeight * 0.025),
+                    const SizedBox(height: 12),
                     _RegisterCard(
                       fullNameController: _fullNameController,
                       emailController: _emailController,
@@ -129,9 +125,9 @@ class _RegisterParukuatState extends ConsumerState<RegisterParukuat> {
                       onPickDate: _pickDate,
                       onSubmit: _submit,
                     ),
-                    SizedBox(height: availHeight * 0.035),
+                    const SizedBox(height: 16),
                     _RegisterFooter(isLoading: isLoading),
-                    SizedBox(height: availHeight * 0.04),
+                    const SizedBox(height: 12),
                   ],
                 ),
               ),
@@ -155,53 +151,46 @@ class _RegisterHeader extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 24),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
+        // Logo ParuKuat
+        Image.asset(
+          'assets/images/LogoParuKuat.png',
+          width: 200,
+          height: 200,
+          errorBuilder: (_, _, _) => const Icon(
+            Icons.health_and_safety,
+            color: AppColors.primary,
+            size: 150,
+          ),
+        ),
+        // Selamat Datang
+        Transform.translate(
+          offset: const Offset(0, -30),
+          child: Column(
             children: [
-              Image.asset(
-                'assets/images/LogoParuKuat.png',
-                width: 30,
-                height: 30,
-                errorBuilder: (_, _, _) => const Icon(
-                  Icons.health_and_safety,
-                  color: AppColors.primary,
-                  size: 30,
+              const Padding(
+                padding: EdgeInsets.only(bottom: 8),
+                child: Text(
+                  'Selamat Datang!',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Manrope',
+                    color: AppColors.primary,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    height: 1.0,
+                    letterSpacing: -0.80,
+                  ),
                 ),
               ),
-              const SizedBox(width: 8),
-              const Text('ParuKuat', style: AppTextStyles.brandXLarge),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 320),
+                child: const Text(
+                  'Silakan daftar untuk melanjutkan\nperjalanan kesehatan paru Anda.',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.bodyMediumWeight,
+                ),
+              ),
             ],
-          ),
-        ),
-        const Padding(
-          padding: EdgeInsets.only(bottom: 12),
-          child: Text(
-            'Selamat Datang!',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: 'Manrope',
-              color: AppColors.primary,
-              fontSize: 36,
-              fontWeight: FontWeight.w800,
-              height: 1.11,
-              letterSpacing: -0.90,
-            ),
-          ),
-        ),
-        ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 320),
-          child: const Text(
-            'Silakan daftar untuk melanjutkan\nperjalanan kesehatan paru Anda.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: 'Manrope',
-              color: AppColors.textSecondary,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              height: 1.63,
-            ),
           ),
         ),
       ],
@@ -241,12 +230,12 @@ class _RegisterCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       decoration: ShapeDecoration(
         color: AppColors.cardSurface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(48)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
         shadows: const [
-          BoxShadow(color: AppColors.shadowPink, blurRadius: 100, offset: Offset(0, 40)),
+          BoxShadow(color: AppColors.shadowPink, blurRadius: 60, offset: Offset(0, 30)),
         ],
       ),
       child: Column(
@@ -254,7 +243,7 @@ class _RegisterCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const AuthFieldLabel(label: 'NAMA LENGKAP'),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           TextFormField(
             controller: fullNameController,
             keyboardType: TextInputType.name,
@@ -268,10 +257,10 @@ class _RegisterCard extends StatelessWidget {
             },
             decoration: authInputDecoration(hint: 'Nama Lengkap', icon: Icons.person_outline),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 12),
 
           const AuthFieldLabel(label: 'EMAIL'),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           TextFormField(
             controller: emailController,
             keyboardType: TextInputType.emailAddress,
@@ -284,10 +273,10 @@ class _RegisterCard extends StatelessWidget {
             },
             decoration: authInputDecoration(hint: 'nama@email.com', icon: Icons.mail_outline),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 12),
 
           const AuthFieldLabel(label: 'KATA SANDI'),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           TextFormField(
             controller: passwordController,
             obscureText: obscurePassword,
@@ -314,10 +303,10 @@ class _RegisterCard extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 12),
 
           const AuthFieldLabel(label: 'NO. TELEPON (OPSIONAL)'),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           TextFormField(
             controller: phoneController,
             keyboardType: TextInputType.phone,
@@ -325,10 +314,10 @@ class _RegisterCard extends StatelessWidget {
             style: AppTextStyles.inputText,
             decoration: authInputDecoration(hint: '08xxxxxxxx', icon: Icons.phone_outlined),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 12),
 
           const AuthFieldLabel(label: 'TANGGAL LAHIR (OPSIONAL)'),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           TextFormField(
             controller: birthDateController,
             readOnly: true,
@@ -346,13 +335,9 @@ class _RegisterCard extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 20),
 
           AuthPrimaryButton(label: 'Daftar', isLoading: isLoading, onPressed: onSubmit),
-          const SizedBox(height: 40),
-          const AuthDividerWithText(label: 'ATAU DAFTAR DENGAN'),
-          const SizedBox(height: 40),
-          const AuthSocialButton(),
         ],
       ),
     );

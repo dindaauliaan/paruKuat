@@ -81,7 +81,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       final user = await _repository.login(email: email, password: password);
       state = AuthAuthenticated(user);
-    } on Exception catch (e) {
+    } catch (e) {
       state = AuthError(_parseError(e));
     }
   }
@@ -103,7 +103,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         birthDate: birthDate,
       );
       state = AuthAuthenticated(user);
-    } on Exception catch (e) {
+    } catch (e) {
       state = AuthError(_parseError(e));
     }
   }
@@ -113,7 +113,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       await _repository.logout();
       state = const AuthUnauthenticated();
-    } on Exception catch (e) {
+    } catch (e) {
       state = AuthError(_parseError(e));
     }
   }
@@ -137,7 +137,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
       state = AuthAuthenticated(updated);
       return true;
-    } on Exception catch (e) {
+    } catch (e) {
       // Jangan reset ke error agar UI tetap bisa menampilkan data lama
       throw Exception(_parseError(e));
     }
@@ -162,7 +162,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
       state = AuthAuthenticated(updated);
       return true;
-    } on Exception catch (e) {
+    } catch (e) {
       throw Exception(_parseError(e));
     }
   }
@@ -180,7 +180,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
       state = AuthAuthenticated(updated);
       return true;
-    } on Exception catch (e) {
+    } catch (e) {
       throw Exception(_parseError(e));
     }
   }
@@ -189,9 +189,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
     if (state is AuthError) state = const AuthUnauthenticated();
   }
 
-  String _parseError(Exception e) {
+  String _parseError(Object e) {
+    if (e is PostgrestException) {
+      return e.message;
+    }
+    if (e is AuthException) {
+      return e.message;
+    }
     final raw = e.toString();
-    if (raw.startsWith('Exception: ')) return raw.replaceFirst('Exception: ', '');
-    return 'Terjadi kesalahan. Silakan coba lagi.';
+    if (raw.startsWith('Exception: ')) {
+      return raw.replaceFirst('Exception: ', '');
+    }
+    return 'Terjadi kesalahan: $raw';
   }
 }
