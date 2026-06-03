@@ -67,7 +67,9 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
   // APPBAR
   // ================================================================
   Widget _buildAppBar(int? userId) {
-    final unreadCount = userId != null ? ref.watch(unreadCountProvider(userId)) : 0;
+    final unreadCount = userId != null
+        ? ref.watch(unreadCountProvider(userId))
+        : 0;
 
     return Container(
       width: double.infinity,
@@ -90,7 +92,10 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
                   final profileUrl = authState is AuthAuthenticated
                       ? authState.user.profilePicture
                       : null;
-                  return _AvatarWidget(profilePictureUrl: profileUrl);
+                  return GestureDetector(
+                    onTap: () => context.go(AppRoutes.profile),
+                    child: _AvatarWidget(profilePictureUrl: profileUrl),
+                  );
                 },
               ),
               // Notification bell with badge
@@ -178,7 +183,10 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
   // ================================================================
   // NOTIFICATION LIST
   // ================================================================
-  Widget _buildNotificationList(int userId, List<NotificationItem> notifications) {
+  Widget _buildNotificationList(
+    int userId,
+    List<NotificationItem> notifications,
+  ) {
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(notificationListProvider(userId));
@@ -231,42 +239,18 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              // Checkbox mark as read
-              GestureDetector(
-                onTap: isLoading
-                    ? null
-                    : () => _toggleRead(notif),
-                child: Container(
-                  width: 24,
-                  height: 24,
-                  decoration: ShapeDecoration(
-                    color: notif.isRead
-                        ? AppColors.primary
-                        : Colors.transparent,
-                    shape: RoundedRectangleBorder(
-                      side: BorderSide(
-                        width: 1.5,
-                        color: notif.isRead
-                            ? AppColors.primary
-                            : const Color(0x66CD2C58),
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+              if (!notif.isRead)
+                Container(
+                  width: 10,
+                  height: 10,
+                  margin: const EdgeInsets.only(bottom: 8),
+                  decoration: const ShapeDecoration(
+                    color: AppColors.primary,
+                    shape: OvalBorder(),
                   ),
-                  child: isLoading
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: AppColors.primary,
-                          ),
-                        )
-                      : notif.isRead
-                          ? const Icon(Icons.check, color: Colors.white, size: 16)
-                          : null,
-                ),
-              ),
+                )
+              else
+                const SizedBox(height: 18),
               const SizedBox(width: 16),
 
               // Icon — pilih ikon berdasarkan kata kunci di title
@@ -300,8 +284,9 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
                             : Colors.black,
                         fontSize: 14,
                         fontFamily: 'Manrope',
-                        fontWeight:
-                            notif.isRead ? FontWeight.w500 : FontWeight.w700,
+                        fontWeight: notif.isRead
+                            ? FontWeight.w500
+                            : FontWeight.w700,
                         height: 1.30,
                       ),
                     ),
@@ -337,16 +322,20 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
                 ),
               ),
 
-              // Unread dot
-              if (!notif.isRead)
-                Container(
-                  width: 10,
-                  height: 10,
-                  decoration: const ShapeDecoration(
-                    color: AppColors.primary,
-                    shape: OvalBorder(),
+              // Unread dot & Delete Button
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  GestureDetector(
+                    onTap: isLoading ? null : () => _deleteNotification(notif),
+                    child: const Icon(
+                      Icons.delete_outline,
+                      color: Color(0xFFB8A0A0),
+                      size: 20,
+                    ),
                   ),
-                ),
+                ],
+              ),
             ],
           ),
         ),
@@ -355,22 +344,32 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
   }
 
   // ================================================================
-  // ACTIONS — Mark as read
+  // ACTIONS — Delete
   // ================================================================
-  Future<void> _toggleRead(NotificationItem notif) async {
-    if (notif.isRead) return; // Already read
 
-    setState(() => _markingIds.add(notif.id));
+  Future<void> _deleteNotification(NotificationItem notif) async {
+    setState(() => _markingIds.add(notif.id)); // Reuse markingIds for loading
     try {
-      await ref.read(notificationRepositoryProvider).markAsRead(notif.id);
+      await ref
+          .read(notificationRepositoryProvider)
+          .deleteNotification(notif.id);
       if (_userId != null) {
         ref.invalidate(notificationListProvider(_userId!));
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Notifikasi berhasil dihapus'),
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 2),
+          ),
+        );
       }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Gagal menandai notifikasi'),
+            content: Text('Gagal menghapus notifikasi'),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -428,13 +427,19 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
     final message = notif.message.toLowerCase();
     final combined = '$title $message';
 
-    if (combined.contains('latihan') || combined.contains('berlatih') || combined.contains('napas')) {
+    if (combined.contains('latihan') ||
+        combined.contains('berlatih') ||
+        combined.contains('napas')) {
       return Icons.spa;
     }
-    if (combined.contains('target') || combined.contains('pencapaian') || combined.contains('selamat')) {
+    if (combined.contains('target') ||
+        combined.contains('pencapaian') ||
+        combined.contains('selamat')) {
       return Icons.emoji_events;
     }
-    if (combined.contains('meningkat') || combined.contains('kapasitas') || combined.contains('progres')) {
+    if (combined.contains('meningkat') ||
+        combined.contains('kapasitas') ||
+        combined.contains('progres')) {
       return Icons.trending_up;
     }
     if (combined.contains('rekomendasi') || combined.contains('rekomendasi')) {
@@ -454,13 +459,19 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
     final message = notif.message.toLowerCase();
     final combined = '$title $message';
 
-    if (combined.contains('latihan') || combined.contains('berlatih') || combined.contains('napas')) {
+    if (combined.contains('latihan') ||
+        combined.contains('berlatih') ||
+        combined.contains('napas')) {
       return const Color(0xFF9C27B0); // Purple
     }
-    if (combined.contains('target') || combined.contains('pencapaian') || combined.contains('selamat')) {
+    if (combined.contains('target') ||
+        combined.contains('pencapaian') ||
+        combined.contains('selamat')) {
       return const Color(0xFFFFA000); // Amber
     }
-    if (combined.contains('meningkat') || combined.contains('kapasitas') || combined.contains('progres')) {
+    if (combined.contains('meningkat') ||
+        combined.contains('kapasitas') ||
+        combined.contains('progres')) {
       return const Color(0xFF4CAF50); // Green
     }
     if (combined.contains('rekomendasi')) {
@@ -500,10 +511,7 @@ class _ErrorState extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
 
-  const _ErrorState({
-    required this.message,
-    required this.onRetry,
-  });
+  const _ErrorState({required this.message, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {

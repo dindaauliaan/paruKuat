@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
@@ -93,7 +94,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   final profileUrl = authState is AuthAuthenticated
                       ? authState.user.profilePicture
                       : null;
-                  return _AvatarWidget(profilePictureUrl: profileUrl);
+                  return GestureDetector(
+                    onTap: () => context.go(AppRoutes.profile),
+                    child: _AvatarWidget(profilePictureUrl: profileUrl),
+                  );
                 },
               ),
               // Notification bell with badge
@@ -189,7 +193,6 @@ class _HomeContent extends ConsumerWidget {
             const SizedBox(height: AppSizes.lg),
             _GreetingSection(
               userName: homeData.userName,
-              streak: homeData.currentStreak,
             ),
             _RecommendationCard(
               title: homeData.recommendationTitle,
@@ -213,15 +216,13 @@ class _HomeContent extends ConsumerWidget {
 // ====================================================================
 class _GreetingSection extends StatelessWidget {
   final String userName;
-  final int streak;
 
-  const _GreetingSection({required this.userName, required this.streak});
+  const _GreetingSection({required this.userName});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      spacing: 7,
       children: [
         Padding(
           padding: EdgeInsetsGeometry.symmetric(horizontal: AppSizes.md),
@@ -232,53 +233,24 @@ class _GreetingSection extends StatelessWidget {
             children: [
               Text(
                 'Halo, $userName',
-                style: AppTextStyles.displayLarge,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primary,
+                ),
               ),
-              if (streak > 0)
-                const _StreakBadge(),
             ],
           ),
         ),
+        const SizedBox(height: 6),
         Padding(
           padding: EdgeInsetsGeometry.symmetric(horizontal: AppSizes.md),
-          child: Text(
-            streak > 0
-                ? 'Streak $streak hari! Hari yang luar biasa! 🔥\nSudah siap untuk latihan pernapasan hari ini?'
-                : 'Kondisi paru-paru Anda stabil hari ini.\nSudah siap untuk latihan pernapasan hari ini?',
-            style: AppTextStyles.bodyPrimary,
-          ),
         ),
       ],
     );
   }
 }
 
-/// Badge streak kecil di samping greeting.
-class _StreakBadge extends StatelessWidget {
-  const _StreakBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: ShapeDecoration(
-        color: AppColors.accentPinkBadge,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSizes.radiusFull),
-        ),
-      ),
-      child: const Text(
-        '🔥 Streak',
-        style: TextStyle(
-          fontFamily: 'Manrope',
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color: AppColors.primary,
-        ),
-      ),
-    );
-  }
-}
 
 // ====================================================================
 // RECOMMENDATION CARD
@@ -319,7 +291,16 @@ class _RecommendationCard extends StatelessWidget {
           children: [
             Text('REKOMENDASI HARI INI', style: AppTextStyles.labelLarge),
             const SizedBox(height: AppSizes.sm),
-            Text(title, style: AppTextStyles.displayDark),
+            Text(
+              title,
+              style: const TextStyle(
+                fontFamily: 'Manrope',
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+                height: 1.25,
+              ),
+            ),
             const SizedBox(height: AppSizes.sm),
             Text(description, style: AppTextStyles.bodyMedium),
             const Spacer(),
@@ -327,8 +308,7 @@ class _RecommendationCard extends StatelessWidget {
             GestureDetector(
               onTap: () => context.go(AppRoutes.breathing),
               child: Container(
-                width: 203.42,
-                height: AppSizes.buttonHeight,
+                height: 52,
                 decoration: ShapeDecoration(
                   gradient: AppColors.ctaCardGradient,
                   shape: RoundedRectangleBorder(
@@ -447,7 +427,7 @@ class _VitalCapacityCard extends StatelessWidget {
 
 
 // ====================================================================
-// BREATHING TREND CARD
+// BREATHING TREND CARD — fl_chart BarChart interaktif
 // ====================================================================
 class _BreathingTrendCard extends StatelessWidget {
   final List<TrendDataPoint> trend;
@@ -459,6 +439,9 @@ class _BreathingTrendCard extends StatelessWidget {
     double screenWidth = MediaQuery.of(context).size.width;
     bool isSmall = screenWidth < 360;
     final dataPoints = trend;
+
+    // Cek apakah ada data sama sekali
+    final hasData = dataPoints.any((p) => p.actualValue > 0);
 
     return Container(
       width: double.infinity,
@@ -492,7 +475,7 @@ class _BreathingTrendCard extends StatelessWidget {
           AppSizes.cardPaddingLarge,
           AppSizes.cardPaddingLarge,
           AppSizes.cardPaddingLarge,
-          0,
+          AppSizes.cardPaddingLarge,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -532,69 +515,181 @@ class _BreathingTrendCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: AppSizes.xl),
-            // Bar chart
-            SizedBox(
-              height: AppSizes.chartBarMaxHeight,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: dataPoints.map((point) {
-                  return _buildBar(
-                    point.dayLabel,
-                    point.normalizedValue,
-                    point.isToday,
-                  );
-                }).toList(),
-              ),
+            const SizedBox(height: AppSizes.md),
+
+            // Bar chart — fl_chart
+            Expanded(
+              child: hasData
+                  ? BarChart(
+                      BarChartData(
+                        alignment: BarChartAlignment.spaceAround,
+                        maxY: 1.0,
+                        minY: 0,
+                        barTouchData: BarTouchData(
+                          enabled: true,
+                          touchTooltipData: BarTouchTooltipData(
+                            tooltipRoundedRadius: 8,
+                            tooltipPadding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            getTooltipColor: (_) => AppColors.primary,
+                            getTooltipItem: (
+                              group,
+                              groupIndex,
+                              rod,
+                              rodIndex,
+                            ) {
+                              final idx = group.x.toInt();
+                              if (idx < 0 || idx >= dataPoints.length) {
+                                return null;
+                              }
+                              final item = dataPoints[idx];
+                              final o2Text = item.oxygenLevel > 0
+                                  ? 'O₂: ${item.oxygenLevel.toStringAsFixed(0)}%'
+                                  : '';
+                              final sessionText = item.sessionCount > 0
+                                  ? '${item.sessionCount} sesi'
+                                  : 'Tidak ada sesi';
+                              final vcText = item.actualValue > 0
+                                  ? '${item.actualValue.toStringAsFixed(1)} L'
+                                  : '-- L';
+                              return BarTooltipItem(
+                                '${item.dayLabel}\n',
+                                const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontFamily: 'Manrope',
+                                  fontWeight: FontWeight.w700,
+                                ),
+                                children: [
+                                  TextSpan(
+                                    text: '$vcText  |  $sessionText',
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 10,
+                                      fontFamily: 'Manrope',
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  if (o2Text.isNotEmpty)
+                                    TextSpan(
+                                      text: '\n$o2Text',
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 10,
+                                        fontFamily: 'Manrope',
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                ],
+                              );
+                            },
+                          ),
+                        ),
+                        titlesData: FlTitlesData(
+                          show: true,
+                          topTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          rightTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          leftTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              getTitlesWidget: (value, meta) {
+                                final idx = value.toInt();
+                                if (idx < 0 || idx >= dataPoints.length) {
+                                  return const SizedBox.shrink();
+                                }
+                                final isActive = dataPoints[idx].isToday;
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 8),
+                                  child: Text(
+                                    dataPoints[idx].dayLabel,
+                                    style: isActive
+                                        ? AppTextStyles.chartLabelActive
+                                        : AppTextStyles.chartLabel,
+                                  ),
+                                );
+                              },
+                              reservedSize: 28,
+                            ),
+                          ),
+                        ),
+                        gridData: const FlGridData(show: false),
+                        borderData: FlBorderData(show: false),
+                        barGroups: List.generate(dataPoints.length, (i) {
+                          return BarChartGroupData(
+                            x: i,
+                            barRods: [
+                              BarChartRodData(
+                                toY: dataPoints[i].normalizedValue,
+                                color: dataPoints[i].isToday
+                                    ? AppColors.chartBarActive
+                                    : AppColors.chartBarInactive,
+                                width: isSmall ? 12 : 18,
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(6),
+                                  topRight: Radius.circular(6),
+                                ),
+                              ),
+                            ],
+                          );
+                        }),
+                      ),
+                    )
+                  : const Center(
+                      child: Text(
+                        'Belum ada data latihan\nMulai sesi pernapasan Anda',
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.captionRegular,
+                      ),
+                    ),
             ),
+
+            // Legend row
+            if (hasData)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                spacing: 16,
+                children: [
+                  _legendItem(
+                    color: AppColors.chartBarActive,
+                    label: 'Hari Ini',
+                  ),
+                  _legendItem(
+                    color: AppColors.chartBarInactive,
+                    label: 'Sebelumnya',
+                  ),
+                ],
+              ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildBar(String day, double heightFactor, bool isActive) {
-    // Clamp heightFactor ke 0.05 minimum agar bar tetap terlihat
-    final clampedHeight = (heightFactor * AppSizes.chartBarMaxHeight * 0.7)
-        .clamp(4.0, AppSizes.chartBarMaxHeight * 0.7);
-
-    return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 2),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Container(
-              width: double.infinity,
-              height: clampedHeight,
-              decoration: ShapeDecoration(
-                color: isActive
-                    ? AppColors.chartBarActive
-                    : AppColors.chartBarInactive,
-                shape: RoundedRectangleBorder(
-                  side: isActive
-                      ? const BorderSide(
-                          width: 4,
-                          color: AppColors.chartBarActive,
-                        )
-                      : BorderSide.none,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(AppSizes.radiusFull),
-                    topRight: Radius.circular(AppSizes.radiusFull),
-                  ),
-                ),
-              ),
+  Widget _legendItem({required Color color, required String label}) {
+    return Row(
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: ShapeDecoration(
+            color: color,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(2)),
             ),
-            const SizedBox(height: AppSizes.sm),
-            Text(
-              day,
-              style: isActive
-                  ? AppTextStyles.chartLabelActive
-                  : AppTextStyles.chartLabel,
-            ),
-          ],
+          ),
         ),
-      ),
+        const SizedBox(width: 4),
+        Text(label, style: AppTextStyles.chartLabel),
+      ],
     );
   }
 }

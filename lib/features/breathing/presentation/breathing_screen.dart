@@ -7,10 +7,11 @@ import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_text_styles.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../widgets/bottom_nav.dart';
-import '../domain/exercise_type.dart';
 import '../../auth/presentation/auth_notifier.dart';
+import '../../home/presentation/home_provider.dart';
 import '../domain/breathing_phase.dart';
 import '../domain/breathing_state.dart';
+import '../domain/exercise_type.dart';
 import 'breathing_provider.dart';
 
 /// Guided Breathing Screen — interactive breathing therapy.
@@ -42,9 +43,9 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFFFDFE8), // soft pink
-              Color(0xFFFFFFFF), // white
-              Color(0xFFFFDFE8), // soft pink
+              Color(0xFFFFDFE8),
+              Color(0xFFFFFFFF),
+              Color(0xFFFFDFE8),
             ],
             stops: [0.0, 0.5, 1.0],
           ),
@@ -55,81 +56,86 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
               // ==== APPBAR ====
               _buildAppBar(context),
 
-              // ==== MAIN CONTENT (scrollable) ====
+              // ==== MAIN CONTENT ====
+              // Gunakan Expanded + LayoutBuilder supaya konten
+              // menyesuaikan tinggi layar yang tersedia (tidak overflow)
               Expanded(
                 child: state.isCompleted
                     ? _buildCompletionView(context)
-                    : SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSizes.pageHorizontal,
-                        ),
-                        child: Column(
-                          children: [
-                            const SizedBox(height: AppSizes.lg),
+                    : LayoutBuilder(
+                        builder: (context, constraints) {
+                          // Hitung ukuran circle berdasarkan ruang tersedia
+                          // Maksimal 200, minimal 140 agar muat di layar kecil
+                          final circleSize =
+                              (constraints.maxHeight * 0.30).clamp(140.0, 200.0);
 
-                            // Badge — nama exercise type
-                            _buildExerciseBadge(exerciseTypesAsync, state),
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSizes.pageHorizontal,
+                            ),
+                            // SingleChildScrollView hanya aktif jika konten
+                            // melebihi ruang (physics NeverScrollable jika muat)
+                            child: SingleChildScrollView(
+                              physics: const ClampingScrollPhysics(),
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  // Paksa Column mengisi minimal tinggi yang ada
+                                  minHeight: constraints.maxHeight,
+                                ),
+                                child: IntrinsicHeight(
+                                  child: Column(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      // Badge exercise type
+                                      _buildExerciseBadge(
+                                          exerciseTypesAsync, state),
 
-                            const SizedBox(height: AppSizes.lg),
+                                      // Phase title + instruction
+                                      if (state.isRunning) ...[
+                                        _buildPhaseTitle(state),
+                                        _buildInstruction(state),
+                                      ] else ...[
+                                        _buildIdleTitle(),
+                                        const Text(
+                                          'Pilih jenis latihan dan mulai sesi\npernapasan Anda',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            color: Color(0xFF64748B),
+                                            fontSize: 14,
+                                            fontFamily: 'Manrope',
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
 
-                            // Phase title & instruction (hanya jika running/ended)
-                            if (state.isRunning) ...[
-                              _buildPhaseTitle(state),
-                              const SizedBox(height: AppSizes.sm),
-                              _buildInstruction(state),
-                              const SizedBox(height: AppSizes.lg),
-                            ] else ...[
-                              _buildIdleTitle(),
-                              const SizedBox(height: AppSizes.sm),
-                              const Text(
-                                'Pilih jenis latihan dan mulai sesi\npernapasan Anda',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Color(0xFF64748B),
-                                  fontSize: 18,
-                                  fontFamily: 'Manrope',
-                                  fontWeight: FontWeight.w500,
-                                  height: 1.56,
+                                      // Lingkaran pernapasan (ukuran adaptif)
+                                      _buildBreathingCircle(
+                                          state, circleSize),
+
+                                      // Stat cards
+                                      _buildStatCards(state),
+
+                                      // Pace badge & phase indicator (saat running)
+                                      if (state.isRunning)
+                                        _buildPaceBadge(state),
+                                      if (state.isRunning)
+                                        _buildPhaseIndicator(state),
+
+                                      // Exercise selector (saat idle)
+                                      if (!state.isRunning)
+                                        _buildExerciseSelector(
+                                            exerciseTypesAsync, state),
+
+                                      // Tombol play/pause
+                                      _buildControlButton(state),
+                                    ],
+                                  ),
                                 ),
                               ),
-                              const SizedBox(height: AppSizes.lg),
-                            ],
-
-                            // Breathing circle
-                            _buildBreathingCircle(state),
-
-                            const SizedBox(height: AppSizes.lg),
-
-                            // Stat cards
-                            _buildStatCards(state),
-
-                            const SizedBox(height: AppSizes.lg),
-
-                            // Pace badge (hanya saat running)
-                            if (state.isRunning) _buildPaceBadge(state),
-
-                            if (state.isRunning)
-                              const SizedBox(height: AppSizes.lg),
-
-                            // Phase indicator
-                            if (state.isRunning) _buildPhaseIndicator(state),
-
-                            if (state.isRunning)
-                              const SizedBox(height: AppSizes.lg),
-
-                            // Exercise type selector (hidden saat running)
-                            if (!state.isRunning)
-                              _buildExerciseSelector(exerciseTypesAsync, state),
-
-                            if (!state.isRunning)
-                              const SizedBox(height: AppSizes.lg),
-
-                            // Play / Pause button
-                            _buildControlButton(state),
-
-                            const SizedBox(height: AppSizes.lg),
-                          ],
-                        ),
+                            ),
+                          );
+                        },
                       ),
               ),
 
@@ -148,17 +154,31 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
   // ================================================================
   Widget _buildAppBar(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           GestureDetector(
-            onTap: () {
-              final state = ref.read(breathingNotifierProvider);
-              if (state.isRunning) {
-                ref.read(breathingNotifierProvider.notifier).stopSession();
+            onTap: () async {
+              final notifier = ref.read(breathingNotifierProvider.notifier);
+              final currentState = ref.read(breathingNotifierProvider);
+              final authState = ref.read(authNotifierProvider);
+
+              // Simpan hasil latihan — baik parsial (running) maupun selesai (completed)
+              if (!currentState.sessionSaved &&
+                  currentState.totalSecondsElapsed > 0 &&
+                  authState is AuthAuthenticated) {
+                await notifier.saveSession(authState.user.id);
+                // Invalidate home data agar grafik tren langsung update
+                ref.invalidate(homeDataProvider(authState.user.id));
               }
-              context.go(AppRoutes.home);
+
+              if (currentState.isRunning) {
+                notifier.stopSession();
+              }
+              if (context.mounted) {
+                context.go(AppRoutes.home);
+              }
             },
             child: const Row(
               children: [
@@ -184,9 +204,8 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
       loading: () => const SizedBox.shrink(),
       error: (_, _) => _buildBadgeLabel('DEEP LUNG RECOVERY'),
       data: (types) {
-        final selected = types.where(
-          (t) => t.id == state.selectedExerciseTypeId,
-        );
+        final selected =
+            types.where((t) => t.id == state.selectedExerciseTypeId);
         final label = selected.isNotEmpty
             ? selected.first.name.toUpperCase()
             : 'DEEP LUNG RECOVERY';
@@ -213,7 +232,7 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
           textAlign: TextAlign.center,
           style: const TextStyle(
             color: Color(0xFFE06B80),
-            fontSize: 12,
+            fontSize: 11,
             fontFamily: 'Manrope',
             fontWeight: FontWeight.w700,
             height: 1.33,
@@ -236,11 +255,11 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
         textAlign: TextAlign.center,
         style: TextStyle(
           color: state.currentColor,
-          fontSize: 48,
+          fontSize: 28,
           fontFamily: 'Manrope',
           fontWeight: FontWeight.w800,
           height: 1,
-          letterSpacing: -1.20,
+          letterSpacing: -1.0,
         ),
       ),
     );
@@ -252,11 +271,11 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
       textAlign: TextAlign.center,
       style: TextStyle(
         color: AppColors.primary,
-        fontSize: 48,
+        fontSize: 20,
         fontFamily: 'Manrope',
         fontWeight: FontWeight.w800,
         height: 1,
-        letterSpacing: -1.20,
+        letterSpacing: -1.0,
       ),
     );
   }
@@ -273,86 +292,83 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
         textAlign: TextAlign.center,
         style: const TextStyle(
           color: Color(0xFF64748B),
-          fontSize: 18,
+          fontSize: 14,
           fontFamily: 'Manrope',
           fontWeight: FontWeight.w500,
-          height: 1.56,
+          height: 1.4,
         ),
       ),
     );
   }
 
   // ================================================================
-  // BREATHING CIRCLE
+  // BREATHING CIRCLE — ukuran adaptif via parameter [size]
   // ================================================================
-  Widget _buildBreathingCircle(BreathingState state) {
+  Widget _buildBreathingCircle(BreathingState state, double size) {
+    final iconSize = size * 0.32;
+    final fontSize = size * 0.14;
+
     return Center(
       child: AnimatedScale(
         scale: state.circleScale,
         duration: const Duration(milliseconds: 800),
         curve: Curves.easeInOut,
         child: Container(
-          width: 280,
-          height: 280,
+          width: size,
+          height: size,
           decoration: BoxDecoration(
             color: Colors.white,
             shape: BoxShape.circle,
             boxShadow: const [
               BoxShadow(
                 color: Color(0x1A000000),
-                blurRadius: 30,
-                offset: Offset(0, 10),
+                blurRadius: 24,
+                offset: Offset(0, 8),
               ),
             ],
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const SizedBox(height: 20),
               // Phase icon
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 400),
                 child: Icon(
                   _phaseIcon(state.phase),
                   key: ValueKey(state.phase),
-                  size: 100,
+                  size: iconSize,
                   color: state.currentColor,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
               // Timer display
-              Column(
-                children: [
-                  Text(
-                    _formatTime(
-                      state.isRunning || state.isCompleted
-                          ? state.totalSecondsElapsed
-                          : 0,
-                    ),
-                    style: TextStyle(
-                      color: state.isRunning || state.isCompleted
-                          ? state.currentColor
-                          : AppColors.primary,
-                      fontSize: 36,
-                      fontFamily: 'Manrope',
-                      fontWeight: FontWeight.w800,
-                      height: 1.11,
-                      letterSpacing: -1.80,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    state.isRunning || state.isCompleted ? 'ELAPSED' : 'READY',
-                    style: const TextStyle(
-                      color: Color(0xFFE87EA5),
-                      fontSize: 10,
-                      fontFamily: 'Manrope',
-                      fontWeight: FontWeight.w700,
-                      height: 1.50,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                ],
+              Text(
+                _formatTime(
+                  state.isRunning || state.isCompleted
+                      ? state.totalSecondsElapsed
+                      : 0,
+                ),
+                style: TextStyle(
+                  color: state.isRunning || state.isCompleted
+                      ? state.currentColor
+                      : AppColors.primary,
+                  fontSize: fontSize,
+                  fontFamily: 'Manrope',
+                  fontWeight: FontWeight.w800,
+                  height: 1.1,
+                  letterSpacing: -1.0,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                state.isRunning || state.isCompleted ? 'ELAPSED' : 'READY',
+                style: const TextStyle(
+                  color: Color(0xFFE87EA5),
+                  fontSize: 10,
+                  fontFamily: 'Manrope',
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1,
+                ),
               ),
             ],
           ),
@@ -385,10 +401,9 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
   // ================================================================
   Widget _buildStatCards(BreathingState state) {
     return Row(
-      spacing: AppSizes.lg,
+      spacing: AppSizes.md,
       children: [
         Expanded(child: _buildSessionProgressCard(state)),
-        Expanded(child: _buildBreathingRateCard(state)),
       ],
     );
   }
@@ -399,8 +414,7 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
         : 0.0;
 
     return Container(
-      height: 141,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(14),
       decoration: ShapeDecoration(
         color: Colors.white.withValues(alpha: 0.50),
         shape: RoundedRectangleBorder(
@@ -408,29 +422,28 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
             width: 1,
             color: Colors.white.withValues(alpha: 0.30),
           ),
-          borderRadius: BorderRadius.circular(48),
+          borderRadius: BorderRadius.circular(24),
         ),
         shadows: const [
           BoxShadow(
             color: Color(0x0C000000),
             blurRadius: 2,
             offset: Offset(0, 1),
-            spreadRadius: 0,
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           const Text(
-            'SESSION\nPROGRESS',
+            'SESSION PROGRESS',
             style: TextStyle(
               color: Color(0xFF64748B),
-              fontSize: 11,
+              fontSize: 10,
               fontFamily: 'Manrope',
               fontWeight: FontWeight.w700,
-              height: 1.50,
-              letterSpacing: 1.10,
+              letterSpacing: 1.0,
             ),
           ),
           const SizedBox(height: 4),
@@ -442,10 +455,10 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
                 'Cycle ${state.currentCycle}',
                 style: const TextStyle(
                   color: Color(0xFF181C1D),
-                  fontSize: 24,
+                  fontSize: 18,
                   fontFamily: 'Manrope',
                   fontWeight: FontWeight.w800,
-                  height: 1.33,
+                  height: 1.2,
                 ),
               ),
               const SizedBox(width: 4),
@@ -453,18 +466,17 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
                 '/ ${state.totalCycles}',
                 style: const TextStyle(
                   color: Color(0xFF94A3B8),
-                  fontSize: 14,
+                  fontSize: 12,
                   fontFamily: 'Manrope',
                   fontWeight: FontWeight.w500,
-                  height: 1.43,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Container(
             width: double.infinity,
-            height: 6,
+            height: 5,
             clipBehavior: Clip.antiAlias,
             decoration: ShapeDecoration(
               color: const Color(0xFFE6E9E9),
@@ -477,7 +489,7 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
               child: FractionallySizedBox(
                 widthFactor: progress.clamp(0.0, 1.0),
                 child: Container(
-                  height: 6,
+                  height: 5,
                   decoration: ShapeDecoration(
                     color: state.currentColor,
                     shape: RoundedRectangleBorder(
@@ -494,17 +506,15 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
   }
 
   Widget _buildBreathingRateCard(BreathingState state) {
-    // Breathing rate: during session show real-time, idle show placeholder
     final bpm = state.isRunning || state.isCompleted
         ? (state.totalCycles /
-              (state.totalSecondsElapsed > 0
-                  ? state.totalSecondsElapsed / 60
-                  : 1))
+            (state.totalSecondsElapsed > 0
+                ? state.totalSecondsElapsed / 60
+                : 1))
         : 0.0;
 
     return Container(
-      height: 141,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(14),
       decoration: ShapeDecoration(
         color: Colors.white.withValues(alpha: 0.50),
         shape: RoundedRectangleBorder(
@@ -512,29 +522,28 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
             width: 1,
             color: Colors.white.withValues(alpha: 0.30),
           ),
-          borderRadius: BorderRadius.circular(48),
+          borderRadius: BorderRadius.circular(24),
         ),
         shadows: const [
           BoxShadow(
             color: Color(0x0C000000),
             blurRadius: 2,
             offset: Offset(0, 1),
-            spreadRadius: 0,
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           const Text(
             'BREATHING RATE',
             style: TextStyle(
               color: Color(0xFF64748B),
-              fontSize: 11,
+              fontSize: 10,
               fontFamily: 'Manrope',
               fontWeight: FontWeight.w700,
-              height: 1.50,
-              letterSpacing: 1.10,
+              letterSpacing: 1.0,
             ),
           ),
           const SizedBox(height: 4),
@@ -546,10 +555,10 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
                 bpm > 0 ? bpm.toStringAsFixed(1) : '--',
                 style: const TextStyle(
                   color: Color(0xFF181C1D),
-                  fontSize: 24,
+                  fontSize: 18,
                   fontFamily: 'Manrope',
                   fontWeight: FontWeight.w800,
-                  height: 1.33,
+                  height: 1.2,
                 ),
               ),
               const SizedBox(width: 4),
@@ -557,18 +566,17 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
                 'BPM',
                 style: TextStyle(
                   color: Color(0xFF94A3B8),
-                  fontSize: 14,
+                  fontSize: 12,
                   fontFamily: 'Manrope',
                   fontWeight: FontWeight.w500,
-                  height: 1.43,
                 ),
               ),
             ],
           ),
-          const Spacer(),
+          const SizedBox(height: 8),
           Row(
             children: [
-              const Icon(Icons.trending_up, size: 14, color: AppColors.primary),
+              const Icon(Icons.trending_up, size: 12, color: AppColors.primary),
               const SizedBox(width: 4),
               Text(
                 state.isRunning || state.isCompleted
@@ -576,10 +584,9 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
                     : 'Ready',
                 style: const TextStyle(
                   color: AppColors.primary,
-                  fontSize: 11,
+                  fontSize: 10,
                   fontFamily: 'Manrope',
                   fontWeight: FontWeight.w700,
-                  height: 1.50,
                 ),
               ),
             ],
@@ -590,12 +597,13 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
   }
 
   // ================================================================
-  // PACE BADGE — tampilkan pola napas saat sesi berjalan
+  // PACE BADGE
   // ================================================================
   Widget _buildPaceBadge(BreathingState state) {
     return Center(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: ShapeDecoration(
           color: Colors.white.withValues(alpha: 0.5),
           shape: RoundedRectangleBorder(
@@ -609,7 +617,7 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.speed, size: 14, color: Color(0xFF64748B)),
+            const Icon(Icons.speed, size: 12, color: Color(0xFF64748B)),
             const SizedBox(width: 6),
             Text(
               'Pace',
@@ -620,9 +628,10 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
                 color: const Color(0xFF64748B).withValues(alpha: 0.8),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: ShapeDecoration(
                 color: state.currentColor.withValues(alpha: 0.15),
                 shape: RoundedRectangleBorder(
@@ -633,21 +642,21 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
                 state.pace.label,
                 style: TextStyle(
                   fontFamily: 'Manrope',
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: FontWeight.w800,
                   color: state.currentColor,
                   letterSpacing: 0.5,
                 ),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
             Text(
               '${state.pace.cycleDuration}s/cycle',
-              style: TextStyle(
+              style: const TextStyle(
                 fontFamily: 'Manrope',
                 fontSize: 10,
                 fontWeight: FontWeight.w500,
-                color: const Color(0xFF94A3B8),
+                color: Color(0xFF94A3B8),
               ),
             ),
           ],
@@ -686,8 +695,8 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
                         ),
                       ),
                     Container(
-                      width: isActive ? 12 : 8,
-                      height: isActive ? 12 : 8,
+                      width: isActive ? 10 : 7,
+                      height: isActive ? 10 : 7,
                       decoration: ShapeDecoration(
                         color: isActive
                             ? state.currentColor
@@ -706,7 +715,7 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
                       ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
                 Text(
                   label,
                   style: TextStyle(
@@ -716,7 +725,6 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
                     fontSize: 9,
                     fontFamily: 'Manrope',
                     fontWeight: FontWeight.w700,
-                    height: 1.50,
                   ),
                 ),
               ],
@@ -737,10 +745,7 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
     return exerciseTypesAsync.when(
       loading: () => const Center(
         child: Padding(
-          padding: EdgeInsets.symmetric(
-            vertical: AppSizes.sm,
-            horizontal: AppSizes.md,
-          ),
+          padding: EdgeInsets.symmetric(vertical: 8),
           child: CircularProgressIndicator(
             color: AppColors.primary,
             strokeWidth: 3,
@@ -759,10 +764,7 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
       ExerciseType(id: 1, name: 'Deep Lung Recovery', durationSeconds: 112),
       ExerciseType(id: 2, name: 'Pursed Lip Breathing', durationSeconds: 112),
       ExerciseType(
-        id: 3,
-        name: 'Diaphragmatic Breathing',
-        durationSeconds: 168,
-      ),
+          id: 3, name: 'Diaphragmatic Breathing', durationSeconds: 168),
     ];
     return _buildSelectorList(fallbackTypes, state);
   }
@@ -770,27 +772,28 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
   Widget _buildSelectorList(List<ExerciseType> types, BreathingState state) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         const Padding(
-          padding: EdgeInsets.only(left: 8, bottom: 12),
+          padding: EdgeInsets.only(left: 4, bottom: 8),
           child: Text(
             'Pilih Jenis Latihan',
             style: TextStyle(
               color: Color(0xFF64748B),
-              fontSize: 14,
+              fontSize: 12,
               fontFamily: 'Manrope',
               fontWeight: FontWeight.w700,
-              letterSpacing: 1.10,
+              letterSpacing: 0.8,
             ),
           ),
         ),
         SizedBox(
-          height: 100,
+          height: 76,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 2),
             itemCount: types.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 12),
+            separatorBuilder: (_, _) => const SizedBox(width: 10),
             itemBuilder: (context, index) {
               final type = types[index];
               final isSelected = state.selectedExerciseTypeId == type.id;
@@ -802,10 +805,10 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
                       .selectExerciseType(type.id);
                 },
                 child: Container(
-                  width: 200,
+                  width: 155,
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 2,
+                    horizontal: 14,
+                    vertical: 8,
                   ),
                   decoration: ShapeDecoration(
                     color: isSelected
@@ -817,14 +820,13 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
                             ? AppColors.primary
                             : Colors.white.withValues(alpha: 0.30),
                       ),
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(20),
                     ),
                     shadows: const [
                       BoxShadow(
                         color: Color(0x0C000000),
                         blurRadius: 2,
                         offset: Offset(0, 1),
-                        spreadRadius: 0,
                       ),
                     ],
                   ),
@@ -838,10 +840,12 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
                           color: isSelected
                               ? Colors.white
                               : const Color(0xFF181C1D),
-                          fontSize: 14,
+                          fontSize: 12,
                           fontFamily: 'Manrope',
                           fontWeight: FontWeight.w700,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -850,22 +854,25 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
                           color: isSelected
                               ? Colors.white70
                               : const Color(0xFF94A3B8),
-                          fontSize: 12,
+                          fontSize: 11,
                           fontFamily: 'Manrope',
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 1),
                       Text(
                         pace.description,
                         style: TextStyle(
                           color: isSelected
                               ? Colors.white54
-                              : const Color(0xFF94A3B8).withValues(alpha: 0.7),
+                              : const Color(0xFF94A3B8)
+                                  .withValues(alpha: 0.7),
                           fontSize: 9,
                           fontFamily: 'Manrope',
                           fontWeight: FontWeight.w400,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
@@ -882,25 +889,29 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
   // CONTROL BUTTON
   // ================================================================
   Widget _buildControlButton(BreathingState state) {
+    if (state.isCompleted) return const SizedBox.shrink();
+
     IconData icon;
     VoidCallback? onTap;
 
-    if (state.isCompleted) {
-      // Sudah selesai — tombol kembali
-      return const SizedBox.shrink(); // handled by _buildCompletionView
-    } else if (state.isRunning) {
+    if (state.isRunning) {
       icon = Icons.pause_rounded;
-      onTap = () {
-        ref.read(breathingNotifierProvider.notifier).pauseSession();
+      onTap = () async {
+        final notifier = ref.read(breathingNotifierProvider.notifier);
+        final authState = ref.read(authNotifierProvider);
+
+        // Simpan hasil latihan parsial saat pause
+        if (authState is AuthAuthenticated) {
+          await notifier.saveSession(authState.user.id);
+        }
+        notifier.pauseSession();
       };
     } else if (state.totalSecondsElapsed > 0) {
-      // Paused — resume
       icon = Icons.play_arrow_rounded;
       onTap = () {
         ref.read(breathingNotifierProvider.notifier).resumeSession();
       };
     } else {
-      // Idle — start
       icon = Icons.play_arrow_rounded;
       onTap = () {
         ref.read(breathingNotifierProvider.notifier).startSession();
@@ -911,8 +922,8 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          width: 64,
-          height: 64,
+          width: 60,
+          height: 60,
           decoration: ShapeDecoration(
             gradient: const LinearGradient(
               begin: Alignment(0.00, 0.00),
@@ -926,18 +937,12 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
               BoxShadow(
                 color: Color(0x66CD2C58),
                 blurRadius: 10,
-                offset: Offset(0, 8),
-                spreadRadius: -6,
-              ),
-              BoxShadow(
-                color: Color(0x66CD2C58),
-                blurRadius: 25,
-                offset: Offset(0, 20),
-                spreadRadius: -5,
+                offset: Offset(0, 6),
+                spreadRadius: -4,
               ),
             ],
           ),
-          child: Icon(icon, color: Colors.white, size: 32),
+          child: Icon(icon, color: Colors.white, size: 28),
         ),
       ),
     );
@@ -966,57 +971,73 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Spacer(flex: 2),
-            // Success icon
             Container(
-              width: 120,
-              height: 120,
+              width: 100,
+              height: 100,
               decoration: const ShapeDecoration(
                 color: Colors.white,
                 shape: OvalBorder(),
                 shadows: [
                   BoxShadow(
                     color: Color(0x1A000000),
-                    blurRadius: 30,
-                    offset: Offset(0, 10),
+                    blurRadius: 24,
+                    offset: Offset(0, 8),
                   ),
                 ],
               ),
               child: const Icon(
                 Icons.check_circle_rounded,
-                size: 72,
+                size: 60,
                 color: AppColors.primary,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             const Text(
               'Latihan Selesai! 🎉',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: AppColors.primary,
-                fontSize: 32,
+                fontSize: 28,
                 fontFamily: 'Manrope',
                 fontWeight: FontWeight.w800,
                 height: 1.20,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Text(
               '${state.totalCycles} cycles completed\n${_formatTime(state.totalSecondsElapsed)} total duration',
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: Color(0xFF64748B),
-                fontSize: 16,
+                fontSize: 14,
                 fontFamily: 'Manrope',
                 fontWeight: FontWeight.w500,
                 height: 1.60,
               ),
             ),
             const Spacer(flex: 1),
-            // Kembali button
             GestureDetector(
-              onTap: () {
-                ref.read(breathingNotifierProvider.notifier).stopSession();
-                context.go(AppRoutes.home);
+              onTap: () async {
+                final notifier = ref.read(breathingNotifierProvider.notifier);
+                final currentAuth = ref.read(authNotifierProvider);
+
+                // 1. Simpan hasil latihan dulu — tunggu sampai selesai
+                if (!state.sessionSaved && currentAuth is AuthAuthenticated) {
+                  await notifier.saveSession(currentAuth.user.id);
+                }
+
+                // 2. Stop sesi
+                notifier.stopSession();
+
+                // 3. Invalidate home data agar refetch data terbaru
+                if (currentAuth is AuthAuthenticated) {
+                  ref.invalidate(homeDataProvider(currentAuth.user.id));
+                }
+
+                // 4. Navigasi ke home
+                if (context.mounted) {
+                  context.go(AppRoutes.home);
+                }
               },
               child: Container(
                 width: double.infinity,
@@ -1024,20 +1045,15 @@ class _BreathingScreenState extends ConsumerState<BreathingScreen> {
                 decoration: ShapeDecoration(
                   gradient: AppColors.primaryButtonGradient,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+                    borderRadius:
+                        BorderRadius.circular(AppSizes.radiusFull),
                   ),
                   shadows: const [
                     BoxShadow(
                       color: Color(0x66CD2C58),
                       blurRadius: 10,
-                      offset: Offset(0, 8),
-                      spreadRadius: -6,
-                    ),
-                    BoxShadow(
-                      color: Color(0x66CD2C58),
-                      blurRadius: 25,
-                      offset: Offset(0, 20),
-                      spreadRadius: -5,
+                      offset: Offset(0, 6),
+                      spreadRadius: -4,
                     ),
                   ],
                 ),

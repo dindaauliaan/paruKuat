@@ -58,11 +58,17 @@ dependencies:
   # image picker untuk profile picture
   image_picker: ^1.1.2
 
+  # local notifications
+  flutter_local_notifications: ^17.2.1
+  timezone: ^0.9.4
+  flutter_timezone: ^3.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -107,3 +113,10 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/AppLogo.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/images/AppLogo.png"

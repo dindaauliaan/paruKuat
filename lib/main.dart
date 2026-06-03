@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/router/app_router.dart';
+import 'core/services/local_notification_service.dart';
 import 'features/auth/presentation/auth_notifier.dart';
 
 const String _supabaseUrl = 'https://vtpivcozhlfvixqdjtxf.supabase.co';
@@ -14,6 +15,10 @@ const String _supabaseAnonKey =
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Inisialisasi local notification service
+  final notificationService = LocalNotificationService();
+  await notificationService.init();
 
   // Error handler — tampilkan error di layar biar kelihatan
   FlutterError.onError = (FlutterErrorDetails details) {

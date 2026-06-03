@@ -93,9 +93,9 @@ void main() {
     });
 
     group('cycleDuration', () {
-      test('cycleDuration = durasi fase saat ini', () {
+      test('cycleDuration = total durasi siklus pace', () {
         final state = BreathingState(phase: BreathingPhase.exhale);
-        expect(state.cycleDuration, 6);
+        expect(state.cycleDuration, 14);
       });
     });
 

@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../domain/breathing_repository.dart';
@@ -20,11 +21,35 @@ class SupabaseBreathingRepository implements BreathingRepository {
           .select('id, name, description, recommendation_text, duration_seconds')
           .order('id', ascending: true);
 
+      // Jika tabel kosong, seed dengan data default
+      if (data.isEmpty) {
+        await _seedExerciseTypes();
+        return _defaultExerciseTypes();
+      }
+
       return data.map((json) => _exerciseTypeFromJson(json)).toList();
     } catch (_) {
-      // Fallback hardcoded jika query gagal atau tabel kosong
+      // Fallback hardcoded jika query gagal
       return _defaultExerciseTypes();
     }
+  }
+
+  /// Seed tabel `exercise_types` dengan data default jika kosong.
+  Future<void> _seedExerciseTypes() async {
+    final defaults = _defaultExerciseTypes();
+    for (final type in defaults) {
+      await _client.from('exercise_types').upsert(
+        {
+          'id': type.id,
+          'name': type.name,
+          'description': type.description,
+          'recommendation_text': type.recommendationText,
+          'duration_seconds': type.durationSeconds,
+        },
+        onConflict: 'id',
+      );
+    }
+    debugPrint('✅ exercise_types table seeded with ${defaults.length} entries');
   }
 
   @override
@@ -35,17 +60,88 @@ class SupabaseBreathingRepository implements BreathingRepository {
     double? oxygenLevel,
     double? breathingRate,
   }) async {
+    double calculatedVC = vitalCapacityValue ?? 2.5;
+
+    try {
+      // 1. Ambil jumlah sesi latihan yang telah diselesaikan
+      final logsResponse = await _client
+          .from('exercise_logs')
+          .select('id')
+          .eq('user_id', userId);
+      final completedSessionsCount = logsResponse.length;
+
+      // 2. Ambil statistik game terakhir
+      final gameStatsResponse = await _client
+          .from('game_stats')
+          .select('avg_breath_power, stable_breath_sec')
+          .eq('user_id', userId)
+          .order('last_played_at', ascending: false)
+          .limit(1);
+
+      double base = 2.2;
+      double practiceBonus = (completedSessionsCount * 0.05).clamp(0.0, 0.6);
+
+      if (gameStatsResponse.isNotEmpty) {
+        final lastGame = gameStatsResponse.first;
+        final double avgPower = (lastGame['avg_breath_power'] as num?)?.toDouble() ?? 0.0;
+        final double stableSec = (lastGame['stable_breath_sec'] as num?)?.toDouble() ?? 0.0;
+
+        double powerBonus = (avgPower / 100) * 1.4; // Max 1.4 L
+        double stabilityBonus = (stableSec / 20) * 0.8; // Max 0.8 L
+
+        calculatedVC = (base + powerBonus + stabilityBonus + practiceBonus).clamp(2.0, 4.8);
+      } else {
+        // Fallback: gunakan default cycles jika belum main game
+        double cycleBonus = (8 / 8) * 0.6;
+        double randomFluctuation = (Random().nextDouble() * 0.2);
+        calculatedVC = (base + cycleBonus + practiceBonus + randomFluctuation).clamp(2.0, 4.5);
+      }
+    } catch (_) {
+      // Fallback jika query ke database gagal
+      calculatedVC = 2.5 + (Random().nextDouble() * 1.5);
+    }
+
     await _client.from('exercise_logs').insert({
       'user_id': userId,
       'exercise_type_id': exerciseTypeId,
-      'vital_capacity_value': vitalCapacityValue,
+      'vital_capacity_value': calculatedVC,
       'oxygen_level': oxygenLevel,
       'breathing_rate': breathingRate,
       'completed_at': DateTime.now().toIso8601String(),
     });
   }
 
-  /// Fallback jika tabel exercise_types kosong atau gagal fetch.
+  /// Pastikan row dengan [exerciseTypeId] ada di tabel `exercise_types`.
+  /// Jika belum ada, insert data default agar FK constraint tidak gagal.
+  Future<void> _ensureExerciseTypeExists(int exerciseTypeId) async {
+    final existing = await _client
+        .from('exercise_types')
+        .select('id')
+        .eq('id', exerciseTypeId)
+        .maybeSingle();
+
+    if (existing != null) return; // sudah ada
+
+    // Cari dari default list
+    final defaults = _defaultExerciseTypes();
+    final match = defaults.where((t) => t.id == exerciseTypeId);
+    if (match.isNotEmpty) {
+      final type = match.first;
+      await _client.from('exercise_types').upsert(
+        {
+          'id': type.id,
+          'name': type.name,
+          'description': type.description,
+          'recommendation_text': type.recommendationText,
+          'duration_seconds': type.durationSeconds,
+        },
+        onConflict: 'id',
+      );
+      debugPrint('✅ exercise_type id=$exerciseTypeId inserted on-the-fly');
+    }
+  }
+
+  /// Data default exercise types (hardcoded fallback).
   List<ExerciseType> _defaultExerciseTypes() {
     return [
       ExerciseType(
