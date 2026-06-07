@@ -1,17 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'core/config/supabase_config.dart';
 import 'core/router/app_router.dart';
 import 'core/services/local_notification_service.dart';
 import 'features/auth/presentation/auth_notifier.dart';
-
-const String _supabaseUrl = 'https://vtpivcozhlfvixqdjtxf.supabase.co';
-const String _supabaseAnonKey =
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9'
-    '.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ0cGl2Y296aGxmdml4cWRqdHhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyOTk2MjksImV4cCI6MjA5Mjg3NTYyOX0'
-    '.XbriEMe-3hXZWPQpincCWrWxqo6zPzWdBgmIb0ORzh8';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,10 +21,7 @@ Future<void> main() async {
 
   try {
     // Inisialisasi Supabase
-    await Supabase.initialize(
-      url: _supabaseUrl,
-      anonKey: _supabaseAnonKey,
-    );
+    await SupabaseConfig.init();
 
     // Inisialisasi SharedPreferences sebelum runApp
     final prefs = await SharedPreferences.getInstance();
